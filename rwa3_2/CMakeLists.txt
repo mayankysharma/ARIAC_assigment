@@ -8,6 +8,9 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(ariac_msgs REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(std_srvs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -19,5 +22,9 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+install(PROGRAMS
+  rwa3_2/comp_state.py
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
