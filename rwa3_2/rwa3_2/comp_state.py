@@ -57,7 +57,7 @@ class AriacInterface(Node):
 
         # Store the state of the competition
         self._competition_state: CompetitionStateMsg = None
-
+    
     def _competition_state_cb(self, msg: CompetitionStateMsg):
         f'''Callback for the topic {AriacInterface.topic_name}
         Arguments:
