@@ -25,6 +25,11 @@ endif()
 
 install(PROGRAMS
   rwa3_2/comp_state.py
+  rwa3_2/ariac_interface.py
+  rwa3_2/fulfill_orders.py
+  rwa3_2/read_store_orders.py
+  rwa3_2/ship_orders.py
+  rwa3_2/submit_orders.py
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

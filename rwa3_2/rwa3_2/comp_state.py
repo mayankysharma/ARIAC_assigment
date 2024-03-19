@@ -11,7 +11,7 @@ from ariac_msgs.msg import (
 from std_srvs.srv import Trigger
 
 
-class AriacInterface(Node):
+class CompetitionState():
     '''
     Class for a competition interface node.
 
@@ -31,11 +31,7 @@ class AriacInterface(Node):
     }
     '''Dictionary for converting CompetitionState constants to strings'''
 
-    topic_name = "/ariac/competition_state"
-    service_name = "/ariac/start_competition"
-
-    def __init__(self):
-        super().__init__('competition_interface')
+    def __init__(self, node, topic_name, service_name):
 
         sim_time = Parameter(
             "use_sim_time",
@@ -43,15 +39,20 @@ class AriacInterface(Node):
             True
         )
 
-        self.set_parameters([sim_time])
+        self.node = node
+        self.topic_name = topic_name
+        self.service_name = service_name
+        self.competition_started = False
+
+        node.set_parameters([sim_time])
         # Service client for starting the competition
-        self._start_competition_client = self.create_client(
-            Trigger, AriacInterface.service_name)
+        self._start_competition_client = node.create_client(
+            Trigger, service_name)
 
         # Subscriber to the competition state topic
-        self._competition_state_sub = self.create_subscription(
+        self._competition_state_sub = node.create_subscription(
             CompetitionStateMsg,
-            AriacInterface.topic_name,
+            self.topic_name,
             self._competition_state_cb,
             10)
 
@@ -59,59 +60,46 @@ class AriacInterface(Node):
         self._competition_state: CompetitionStateMsg = None
     
     def _competition_state_cb(self, msg: CompetitionStateMsg):
-        f'''Callback for the topic {AriacInterface.topic_name}
+        f'''Callback for the topic {self.topic_name}
         Arguments:
             msg -- CompetitionState message
         '''
+
+        self.node.get_logger().info('Waiting for competition to be ready')
         # Log if competition state has changed
         if self._competition_state != msg.competition_state:
-            state = AriacInterface._competition_states[msg.competition_state]
-            self.get_logger().info(f'Competition state is: {state}', throttle_duration_sec=1.0)
+            state = CompetitionState._competition_states[msg.competition_state]
+            self.node.get_logger().info(f'Competition state is: {state}', throttle_duration_sec=1.0)
 
         self._competition_state = msg.competition_state
 
-    def start_competition(self):
-        '''Function to start the competition.
-        '''
-        self.get_logger().info('Waiting for competition to be ready')
 
         if self._competition_state == CompetitionStateMsg.STARTED:
-            return
+            return 
         # Wait for competition to be ready
-        while self._competition_state != CompetitionStateMsg.READY:
-            try:
-                rclpy.spin_once(self)
-            except KeyboardInterrupt:
-                return
+        if self._competition_state != CompetitionStateMsg.READY:
+            return 
 
-        self.get_logger().info('Competition is ready. Starting...')
+        self.node.get_logger().info('Competition is ready. Starting...')
 
         # Check if service is available
         if not self._start_competition_client.wait_for_service(timeout_sec=3.0):
-            self.get_logger().error(f'Service \'{AriacInterface.service_name}\' is not available.')
-            return
+            self.node.get_logger().error(f'Service \'{self.service_name}\' is not available.')
+            return 
 
         # Create trigger request and call starter service
         request = Trigger.Request()
         future = self._start_competition_client.call_async(request)
 
         # Wait until the service call is completed
-        rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self.node, future)
 
         if future.result().success:
             self.get_logger().info('Started competition.')
+            self.competition_started = True
+            return 
         else:
             self.get_logger().warn('Unable to start competition')
+            return 
 
 
-
-def main(args=None):
-    rclpy.init(args=args)
-    interface = AriacInterface()
-    interface.start_competition()
-    interface.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
