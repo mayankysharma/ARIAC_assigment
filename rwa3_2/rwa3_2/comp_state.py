@@ -31,7 +31,7 @@ class CompetitionState():
     }
     '''Dictionary for converting CompetitionState constants to strings'''
 
-    def __init__(self, node, topic_name, service_name):
+    def __init__(self, node, topic_name, service_name, callback_group):
 
         sim_time = Parameter(
             "use_sim_time",
@@ -42,7 +42,7 @@ class CompetitionState():
         self.node = node
         self.topic_name = topic_name
         self.service_name = service_name
-        self.competition_started = False
+
 
         node.set_parameters([sim_time])
         # Service client for starting the competition
@@ -54,18 +54,20 @@ class CompetitionState():
             CompetitionStateMsg,
             self.topic_name,
             self._competition_state_cb,
-            10)
+            10,
+            callback_group = callback_group)
 
         # Store the state of the competition
-        self._competition_state: CompetitionStateMsg = None
-    
+        self._competition_state : CompetitionStateMsg = None
+        self.competition_ended = False # additional flag for checking if the competition state is ended.
+        self.competition_started = False # addiitional flage for checking if the state is change to start
+
     def _competition_state_cb(self, msg: CompetitionStateMsg):
         f'''Callback for the topic {self.topic_name}
         Arguments:
             msg -- CompetitionState message
         '''
 
-        self.node.get_logger().info('Waiting for competition to be ready')
         # Log if competition state has changed
         if self._competition_state != msg.competition_state:
             state = CompetitionState._competition_states[msg.competition_state]
@@ -76,30 +78,34 @@ class CompetitionState():
 
         if self._competition_state == CompetitionStateMsg.STARTED:
             return 
+
+        if self._competition_state == CompetitionStateMsg.READY:
+            self.node.get_logger().info('Waiting for competition to be ready')
+        
         # Wait for competition to be ready
-        if self._competition_state != CompetitionStateMsg.READY:
-            return 
+        if self._competition_state == CompetitionStateMsg.READY and not self.competition_started:
+            # return 
 
-        self.node.get_logger().info('Competition is ready. Starting...')
+            self.node.get_logger().info('Competition is ready. Starting...')
 
-        # Check if service is available
-        if not self._start_competition_client.wait_for_service(timeout_sec=3.0):
-            self.node.get_logger().error(f'Service \'{self.service_name}\' is not available.')
-            return 
+            # Check if service is available
+            while not self._start_competition_client.wait_for_service(timeout_sec=3.0):
+                self.node.get_logger().error(f'Service \'{self.service_name}\' is not available, waiting...')
+                # return 
 
-        # Create trigger request and call starter service
-        request = Trigger.Request()
-        future = self._start_competition_client.call_async(request)
+            # Create trigger request and call starter service
+            self.node.get_logger().info("calling request for starting")
+            request = Trigger.Request()
+            '''
+            Tried async callback for service not working with multithreading no use to do async again. not sure why it is not running. but sync work fine.
+            '''
+            response = self._start_competition_client.call(request)
 
-        # Wait until the service call is completed
-        rclpy.spin_until_future_complete(self.node, future)
-
-        if future.result().success:
-            self.get_logger().info('Started competition.')
-            self.competition_started = True
-            return 
-        else:
-            self.get_logger().warn('Unable to start competition')
-            return 
-
+            if response.success:
+                self.node.get_logger().info('Started competition.')
+                self.competition_started = True
+                return 
+            else:
+                self.node.get_logger().warn('Unable to start competition')
+                return 
 
