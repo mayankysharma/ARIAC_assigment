@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
+import time
+from collections import deque
 
 from rclpy.node import Node
 import rclpy 
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
-
+# from ship_orders import ShipOrders
+# from read_store_orders import ReadStoreOrders
+from fulfill_orders import CustomTimer
 from comp_state import CompetitionState
 from ariac_msgs.msg import (
     CompetitionState as CompetitionStateMsg,
@@ -22,14 +26,42 @@ class AriacInterface(Node):
         super().__init__(node_name)
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
+        self.order_queue = deque()
 
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, callback_group=group_reentrant1)
-        self._monitor_state = self.create_timer(0, self.monitor_state_callback, callback_group=group_reentrant1)
+        self._monitor_state = self.create_timer(1, self.monitor_state_callback)
+        
+        self.custom_timer = CustomTimer(self)
 
     def monitor_state_callback(self):
 
         if self.comp_state.competition_started and not self.comp_state.competition_ended:
-            print("STARTED Do other task now!!!")
+            # print("STARTED Do other task now!!!")
+            self.fufill_orders()
+
+    def fufill_orders(self):
+
+        # self.get_logger().info('Waiting for Orders!!')
+         
+        if self.custom_timer.check_wait_flag():
+            return
+
+        self.get_logger().info("Done waiting, taking order now!!")
+
+        if len(self.order_queue)>0:
+
+            ## wait for 15 seconds before processing the order and moving to task 6
+            if self.custom_timer.check_delay_flag():
+                return
+
+            ## Now the order if higher priority come after 15 secons our queue will be updated
+            # order = self.order_queue.popleft()
+            self.get_logger().info("Starting the shipping and submitting the order!!!")
+            '''
+            Do the task 6 and task 7
+            '''
+
+        self.custom_timer.reset_flags()
 
 
 def main(args=None):
