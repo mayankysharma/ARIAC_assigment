@@ -20,15 +20,16 @@ class AriacInterface(Node):
     
     order_topic = "/ariac/orders"
     comp_start_state_service_name = "/ariac/start_competition"
+    comp_end_state_service_name = "/ariac/end_competition"
     comp_state_topic_name = "/ariac/competition_state"
 
     def __init__(self, node_name):
         super().__init__(node_name)
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
-        self.order_queue = deque()
+        self.order_queue = deque([1,2])
 
-        self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, callback_group=group_reentrant1)
+        self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
         self._monitor_state = self.create_timer(1, self.monitor_state_callback)
         
         self.custom_timer = CustomTimer(self)
@@ -60,6 +61,10 @@ class AriacInterface(Node):
             '''
             Do the task 6 and task 7
             '''
+            order = self.order_queue.popleft()
+        else:
+            if self.comp_state.all_orders_recieved:
+                self.comp_state.competition_ended = True
 
         self.custom_timer.reset_flags()
 
