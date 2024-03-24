@@ -9,9 +9,9 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
 # from ship_orders import ShipOrders
-# from read_store_orders import ReadStoreOrders
 from fulfill_orders import CustomTimer
 from comp_state import CompetitionState
+from read_store_orders import ReadStoreOrders
 from ariac_msgs.msg import (
     CompetitionState as CompetitionStateMsg,
 )
@@ -27,11 +27,15 @@ class AriacInterface(Node):
         super().__init__(node_name)
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
-        self.order_queue = deque([1,2])
-
+        self.order_queue = deque()
+        # self.order_queue = deque([1,2])
+        # self._orders=[]
+         #Competition State object instance
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
         self._monitor_state = self.create_timer(1, self.monitor_state_callback)
-        
+        #Read and store order object instance
+        # self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue)
+        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
         self.custom_timer = CustomTimer(self)
 
     def monitor_state_callback(self):
@@ -54,14 +58,14 @@ class AriacInterface(Node):
             ## wait for 15 seconds before processing the order and moving to task 6
             if self.custom_timer.check_delay_flag():
                 return
-
+            order = self.order_queue.popleft()
             ## Now the order if higher priority come after 15 secons our queue will be updated
             # order = self.order_queue.popleft()
-            self.get_logger().info("Starting the shipping and submitting the order!!!")
+            self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
             '''
             Do the task 6 and task 7
             '''
-            order = self.order_queue.popleft()
+
         else:
             if self.comp_state.all_orders_recieved:
                 self.comp_state.competition_ended = True

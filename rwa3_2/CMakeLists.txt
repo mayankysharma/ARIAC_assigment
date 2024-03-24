@@ -30,6 +30,7 @@ install(PROGRAMS
   rwa3_2/read_store_orders.py
   rwa3_2/ship_orders.py
   rwa3_2/submit_orders.py
+  rwa3_2/utils.py
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
