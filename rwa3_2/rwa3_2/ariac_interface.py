@@ -12,6 +12,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 from fulfill_orders import CustomTimer
 from comp_state import CompetitionState
 from read_store_orders import ReadStoreOrders
+from ship_orders import ShipOrders
 
 from submit_orders import OrderSubmission  
 from ariac_msgs.msg import (
@@ -36,6 +37,8 @@ class AriacInterface(Node):
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
         self._monitor_state = self.create_timer(1, self.monitor_state_callback)
         self.order_submit = OrderSubmission(self,AriacInterface.submit_order_service_name)
+
+        self.ship_order = ShipOrders(self)
         #Read and store order object instance
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
         self.custom_timer = CustomTimer(self)
@@ -67,7 +70,12 @@ class AriacInterface(Node):
             '''
             Do the task 6 and task 7
             '''
-            self.order_submit.Submit_Order(order.order_task.agv_number(),order.order_id)
+            print("started shipping,",order)
+            data = self.ship_order.lock_move_agv(order)
+            if data is None:
+                self.get_logger().warn("Unable to ship!")
+            print("submit order",data)
+            self.order_submit.Submit_Order(agv_id=data[1],order_id=data[0])
 
         else:
             if self.comp_state.all_orders_recieved:

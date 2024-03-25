@@ -23,19 +23,27 @@ class ShipOrders():
 
         # Create a client to send a request to the `/ariac/agv{num}_lock_tray` service
         # create service for specific agv_ID
+        print("agv tray")
         if num not in self.agv_lock:
             self.agv_lock[num] = self.node.create_client(Trigger,f'/ariac/agv{num}_lock_tray')
 
+        print("service started",self.agv_lock)
         # Build the request
         request = Trigger.Request()
         # Send the request
-        future = self.agv_lock[num].call(request)
+        future = self.agv_lock[num].call_async(request)
 
+        # Wait for the response
+        try:
+            rclpy.spin_until_future_complete(self.node, future)
+        except KeyboardInterrupt as kb_error:
+            raise KeyboardInterrupt from kb_error
         # Check the response
-        if future.success:
+        if future.result().success:
             self.node.get_logger().info(f'AGV{num}\'s tray locked')
         else:
             self.node.get_logger().warn('Unable to lock tray')
+            raise Exception("Unable to lock the tray")
 
     def move_agv_to_station(self, num, station):
         '''
@@ -48,11 +56,11 @@ class ShipOrders():
         Raises:
             KeyboardInterrupt: Exception raised when the user presses Ctrl+C
         '''
-
+        print("move agv")
         # Create a client to send a request to the `/ariac/move_agv` service.
         if num not in self.agv_move:
             self.agv_move[num] = self.node.create_client(MoveAGV,f'/ariac/move_agv{num}')
-
+        print("move agv started",self.agv_move)
         # Create a request object.
         request = MoveAGV.Request()
 
@@ -63,26 +71,28 @@ class ShipOrders():
         # Send the request.
         future = self.agv_move[num].call(request)
 
-        # Wait for the server to respond.
-        # try:
-        #     rclpy.spin_until_future_complete(self, future)
-        # except KeyboardInterrupt as kb_error:
-        #     raise KeyboardInterrupt from kb_error
-
         # Check the result of the service call.
         if future.success:
             self.node.get_logger().info(f'Moved AGV{num} to Warehouse')
         else:
             self.node.get_logger().warn(future.message)
+            raise Exception("Unable to Move") 
     
     def lock_move_agv(self, order):
-        # Retrieve the tray id
-        tray_num = order.order_task.tray_id
-        # Retrieve the agv number
-        agv_num = order.order_task.agv_number
-        # Retrieve the destination
-        ship_destination = order.order_task.destination
-        self.agv_tray_locked(tray_num)
-        self.move_agv_to_station(agv_num, ship_destination)
+        try:
+            # Retrieve the tray id
+            tray_num = order.order_task.tray_id
+            # Retrieve the agv number
+            agv_num = order.order_task.agv_number
+            # Retrieve the destination
+            ship_destination = order.order_task.destination
+            print(tray_num, agv_num, ship_destination)
+
+            # self.agv_tray_locked(tray_num)
+            self.move_agv_to_station(agv_num, ship_destination)
+            return (order.order_id, agv_num)
+        except Exception as e:
+            print(e)
+            return None
 
     

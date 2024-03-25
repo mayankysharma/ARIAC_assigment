@@ -29,3 +29,4 @@ class CustomTimer():
     def reset_flags(self):
         self._wait_flag = False
         self._delay_flag = False
+        self._sleep_start_time=None
