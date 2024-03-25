@@ -5,8 +5,13 @@
 ## Instructions to run task4
 * Run in the chronology
 - First terminal
+* If want to run direct node: 
 ```bash
 ros2 run rwa3_2 ariac_interface.py
+```
+* Other option to launch using launch file:
+```bash
+ros2 launch rwa3_2 ariac_interface.launch.py
 ```
 - Second terminal
 ```bash
