@@ -9,7 +9,7 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
 # from ship_orders import ShipOrders
-from fulfill_orders import CustomTimer
+from custom_timer import CustomTimer
 from comp_state import CompetitionState
 from read_store_orders import ReadStoreOrders
 from ship_orders import ShipOrders
@@ -56,16 +56,17 @@ class AriacInterface(Node):
         if self.custom_timer.check_wait_flag():
             return
 
-        self.get_logger().info("Done waiting, taking order now!!")
+        self.get_logger().info("Done waiting, taking order now, Delay 15 secs for new order!!")
 
         if len(self.order_queue)>0:
             try:
                 ## wait for 15 seconds before processing the order and moving to task 6
                 if self.custom_timer.check_delay_flag():
                     return
+                self.get_logger().info("Got the Order!!")
                 order = self.order_queue.popleft()
                 ## Now the order if higher priority come after 15 secons our queue will be updated
-                # order = self.order_queue.popleft()
+                
                 self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
                 '''
                 Do the task 6 and task 7

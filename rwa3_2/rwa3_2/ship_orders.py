@@ -24,21 +24,15 @@ class ShipOrders():
 
         # Create a client to send a request to the `/ariac/agv{num}_lock_tray` service
         # create service for specific agv_ID
-        # print("agv tray")
+
         if num not in self.agv_lock:
             self.agv_lock[num] = self.node.create_client(Trigger,f'/ariac/agv{num}_lock_tray',callback_group = self.callback_group)
 
-        # print("service started",self.agv_lock)
         # Build the request
         request = Trigger.Request()
         # Send the request
         future = self.agv_lock[num].call(request)
-        # print(future)
-        # # Wait for the response
-        # try:
-        #     rclpy.spin_until_future_complete(self.node, future)
-        # except KeyboardInterrupt as kb_error:
-        #     raise KeyboardInterrupt from kb_error
+
         # Check the response
         if future.success:
             self.node.get_logger().info(f'AGV{num}\'s tray locked')
@@ -59,11 +53,11 @@ class ShipOrders():
         Raises:
             KeyboardInterrupt: Exception raised when the user presses Ctrl+C
         '''
-        # print("move agv")
+
         # Create a client to send a request to the `/ariac/move_agv` service.
         if num not in self.agv_move:
             self.agv_move[num] = self.node.create_client(MoveAGV,f'/ariac/move_agv{num}',callback_group=self.callback_group)
-        # print("move agv started",self.agv_move)
+
         # Create a request object.
         request = MoveAGV.Request()
 
