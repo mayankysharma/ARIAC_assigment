@@ -36,9 +36,9 @@ class AriacInterface(Node):
          #Competition State object instance
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
         self._monitor_state = self.create_timer(1, self.monitor_state_callback)
-        self.order_submit = OrderSubmission(self,AriacInterface.submit_order_service_name)
+        self.order_submit = OrderSubmission(self,AriacInterface.submit_order_service_name,group_reentrant1)
 
-        self.ship_order = ShipOrders(self)
+        self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
         self.custom_timer = CustomTimer(self)
@@ -59,24 +59,26 @@ class AriacInterface(Node):
         self.get_logger().info("Done waiting, taking order now!!")
 
         if len(self.order_queue)>0:
-
-            ## wait for 15 seconds before processing the order and moving to task 6
-            if self.custom_timer.check_delay_flag():
-                return
-            order = self.order_queue.popleft()
-            ## Now the order if higher priority come after 15 secons our queue will be updated
-            # order = self.order_queue.popleft()
-            self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
-            '''
-            Do the task 6 and task 7
-            '''
-            print("started shipping,",order)
-            data = self.ship_order.lock_move_agv(order)
-            if data is None:
-                self.get_logger().warn("Unable to ship!")
-            print("submit order",data)
-            self.order_submit.Submit_Order(agv_id=data[1],order_id=data[0])
-
+            try:
+                ## wait for 15 seconds before processing the order and moving to task 6
+                if self.custom_timer.check_delay_flag():
+                    return
+                order = self.order_queue.popleft()
+                ## Now the order if higher priority come after 15 secons our queue will be updated
+                # order = self.order_queue.popleft()
+                self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
+                '''
+                Do the task 6 and task 7
+                '''
+                # print("started shipping,",order)
+                data = self.ship_order.lock_move_agv(order)
+                if data is None:
+                    self.get_logger().warn("Unable to ship!")
+                # print("submit order",data)
+            
+                while not self.order_submit.Submit_Order(agv_num=data[1],order_id=data[0]): continue
+            except Exception as e:
+                self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
         else:
             if self.comp_state.all_orders_recieved:
                 self.comp_state.competition_ended = True

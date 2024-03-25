@@ -1,35 +1,45 @@
 from ariac_msgs.msg import AGVStatus  # Import the AGVStatus message type
 from ariac_msgs.srv import SubmitOrder  # Import the SubmitOrder service
 from ariac_msgs.msg import Order  # Import the Order message type
+from functools import partial
 
 class OrderSubmission():
-    def __init__(self, node, service_name):
+    def __init__(self, node, service_name, callback_group):
         self.subscribers = {}
         self.node = node
         self.service_name = service_name
-        self.submit_order_client = self.node.create_client(SubmitOrder, service_name)  # Create a client for the SubmitOrder service
-
-    def Submit_Order(self, agv_id, order_id):
+        self.submit_order_client = self.node.create_client(SubmitOrder, service_name, callback_group = callback_group)  # Create a client for the SubmitOrder service
+        self.callback_group = callback_group
+        self.agv_loc = {}
+        for i in range(1,5):
+            self.subscribers[i]  = self.node.create_subscription(AGVStatus, 
+                                                                        '/ariac/agv{}_status'.format(i), 
+                                                                        partial(self.agv_status_callback,agv_num=i),
+                                                                        10,
+                                                                        callback_group = self.callback_group)
+    def Submit_Order(self, agv_num, order_id):
         self.order_id = order_id
-        self.agv_id = agv_id
-        if self.agv_id not in self.subscribers:
-            # Create a subscriber for the AGV status topic
-            self.subscribers[self.agv_id]  = self.node.create_subscription(AGVStatus, '/ariac/agv{}_status'.format(self.agv_id), self.agv_status_callback)
-            # self.subscribers[self.agv_id] = self.agv_status_subscriber
-        # else:
-        #     # If a subscriber already exists, reuse it
-        #     self.agv_status_subscriber = self.subscribers[self.agv_id]
-
-    def agv_status_callback(self, msg):
-        # Check if the AGV has reached the warehouse
-        if msg.location == AGVStatus.WAREHOUSE:
-            # Submit the order
+        self.agv_num = agv_num
+        
+        # self.node.get_logger().info(f"{self.agv_loc[self.agv_num]}, {agv_num}")
+        if self.agv_loc[self.agv_num]==AGVStatus.WAREHOUSE:
+        # print(self.agv_loc[self.agv_num])
             self.call_submit_order_service()
+            return True
+        return False
+        
+    def agv_status_callback(self, msg, agv_num):
+        # Check if the AGV has reached the warehouse
+        # print(msg.location)
+        # if msg.location == AGVStatus.WAREHOUSE:
+            # Submit the order
+        self.agv_loc[agv_num] = msg.location 
 
     def call_submit_order_service(self):
         request = SubmitOrder.Request()
         request.order_id = self.order_id
         # Call the SubmitOrder service
+        # print("send the submission request")
         future = self.submit_order_client.call(request)
         self.order_submission_callback(future)
 
