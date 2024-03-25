@@ -31,12 +31,6 @@ class ShipOrders():
         # Send the request
         future = self.agv_lock[num].call(request)
 
-        # Wait for the response
-        # try:
-        #     rclpy.spin_until_future_complete(self, future)
-        # except KeyboardInterrupt as kb_error:
-        #     raise KeyboardInterrupt from kb_error
-
         # Check the response
         if future.success:
             self.node.get_logger().info(f'AGV{num}\'s tray locked')
@@ -81,14 +75,14 @@ class ShipOrders():
         else:
             self.node.get_logger().warn(future.message)
     
-    def lock_move_agv(self):
+    def lock_move_agv(self, order):
         # Retrieve the tray id
-        self.tray_num = OrderMsg.tray_id
+        tray_num = order.order_task.tray_id
         # Retrieve the agv number
-        self.agv_num = OrderMsg.agv_number
+        agv_num = order.order_task.agv_number
         # Retrieve the destination
-        self.ship_destination = OrderMsg.destination
-        self.agv_tray_locked(self.tray_num)
-        self.move_agv_to_station(self.agv_num, self.ship_destination)
+        ship_destination = order.order_task.destination
+        self.agv_tray_locked(tray_num)
+        self.move_agv_to_station(agv_num, ship_destination)
 
     
