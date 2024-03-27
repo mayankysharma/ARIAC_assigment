@@ -1,17 +1,26 @@
-
 from ariac_msgs.msg import AGVStatus  # Import the AGVStatus message type
 from ariac_msgs.srv import SubmitOrder  # Import the SubmitOrder service
 from ariac_msgs.msg import Order  # Import the Order message type
 from functools import partial
 
 class OrderSubmission():
+    ''' 
+    Class to handle order submission to AGVs.
+    '''
+
     def __init__(self, node, service_name, callback_group):
-        # Initialize subscribers dictionary to store AGV status subscribers
-        self.subscribers = {}
+        ''' 
+        Initialize the OrderSubmission object.
+
+        Args:
+            node: The ROS node.
+            service_name (str): The name of the SubmitOrder service.
+            callback_group: The callback group.
+        '''
+        self.subscribers = {}  # Initialize subscribers dictionary to store AGV status subscribers
         self.node = node  # Store the ROS node
         self.service_name = service_name  # Store the name of the SubmitOrder service
-        # Create a client for the SubmitOrder service with a specified callback group
-        self.submit_order_client = self.node.create_client(SubmitOrder, service_name, callback_group=callback_group)  
+        self.submit_order_client = self.node.create_client(SubmitOrder, service_name, callback_group=callback_group)  # Create a client for the SubmitOrder service with a specified callback group
         self.callback_group = callback_group  # Store the callback group
         self.agv_loc = {}  # Initialize dictionary to store AGV locations
         # Create subscribers for AGV status messages for each AGV
@@ -23,6 +32,16 @@ class OrderSubmission():
                                                                 callback_group=self.callback_group)
         
     def Submit_Order(self, agv_num, order_id):
+        ''' 
+        Submit an order to a specified AGV.
+
+        Args:
+            agv_num (int): The number of the AGV.
+            order_id (str): The ID of the order.
+
+        Returns:
+            bool: True if order submission is successful, False otherwise.
+        '''
         self.order_id = order_id  # Store the order ID
         self.agv_num = agv_num  # Store the AGV number
         
@@ -34,10 +53,19 @@ class OrderSubmission():
         return False  # Return False if AGV is not at the warehouse
         
     def agv_status_callback(self, msg, agv_num):
-        # Callback function to update AGV locations
+        ''' 
+        Callback function to update AGV locations.
+
+        Args:
+            msg: The AGVStatus message.
+            agv_num (int): The number of the AGV.
+        '''
         self.agv_loc[agv_num] = msg.location 
 
     def call_submit_order_service(self):
+        ''' 
+        Call the SubmitOrder service to submit the order.
+        '''
         # Create a request object for the SubmitOrder service
         request = SubmitOrder.Request()
         request.order_id = self.order_id  # Set the order ID in the request
@@ -47,6 +75,12 @@ class OrderSubmission():
         self.order_submission_callback(future)
 
     def order_submission_callback(self, future):
+        ''' 
+        Callback function to handle the response from the SubmitOrder service.
+
+        Args:
+            future: The future object representing the response from the service call.
+        '''
         try:
             # Retrieve the response from the future object
             response = future

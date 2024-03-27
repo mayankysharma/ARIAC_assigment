@@ -5,10 +5,21 @@ from ariac_msgs.msg import KittingTask as KittingTaskMsg
 from ariac_msgs.msg import Order as OrderMsg
 
 class ShipOrders():
+    ''' 
+    Class to handle shipping orders by locking AGV trays and moving AGVs to assembly stations.
+    '''
+
     def __init__(self, node, callback_group):
+        ''' 
+        Initialize the ShipOrders object.
+
+        Args:
+            node: The ROS node.
+            callback_group: The callback group.
+        '''
         self.node = node
-        self.agv_lock = {}
-        self.agv_move = {}
+        self.agv_lock = {}  # Dictionary to store AGV lock clients
+        self.agv_move = {}  # Dictionary to store AGV move clients
         self.callback_group = callback_group
 
     def agv_tray_locked(self, num):
@@ -21,10 +32,7 @@ class ShipOrders():
         Raises:
             KeyboardInterrupt: Exception raised when the user presses Ctrl+C
         '''
-
         # Create a client to send a request to the `/ariac/agv{num}_lock_tray` service
-        # create service for specific agv_ID
-
         if num not in self.agv_lock:
             self.agv_lock[num] = self.node.create_client(Trigger,f'/ariac/agv{num}_lock_tray',callback_group = self.callback_group)
 
@@ -53,7 +61,6 @@ class ShipOrders():
         Raises:
             KeyboardInterrupt: Exception raised when the user presses Ctrl+C
         '''
-
         # Create a client to send a request to the `/ariac/move_agv` service.
         if num not in self.agv_move:
             self.agv_move[num] = self.node.create_client(MoveAGV,f'/ariac/move_agv{num}',callback_group=self.callback_group)
@@ -76,6 +83,15 @@ class ShipOrders():
             raise Exception("Unable to Move") 
     
     def lock_move_agv(self, order):
+        ''' 
+        Lock the tray of an AGV and move it to the specified destination for shipping.
+
+        Args:
+            order (OrderMsg): The order message.
+
+        Returns:
+            Tuple[str, int] or None: A tuple containing the order ID and AGV number if successful, otherwise None.
+        '''
         try:
             # Retrieve the tray id
             tray_num = order.order_task.tray_id
@@ -83,7 +99,6 @@ class ShipOrders():
             agv_num = order.order_task.agv_number
             # Retrieve the destination
             ship_destination = order.order_task.destination
-            # print(tray_num, agv_num, ship_destination)
 
             self.agv_tray_locked(tray_num)
             self.move_agv_to_station(agv_num, ship_destination)
@@ -91,5 +106,3 @@ class ShipOrders():
         except Exception as e:
             print(e)
             return None
-
-    

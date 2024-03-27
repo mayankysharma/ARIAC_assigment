@@ -20,6 +20,9 @@ from ariac_msgs.msg import (
 )
 
 class AriacInterface(Node):
+    """
+    Class representing the interface for managing ARIAC competition tasks.
+    """
     
     order_topic = "/ariac/orders"
     comp_start_state_service_name = "/ariac/start_competition"
@@ -28,6 +31,11 @@ class AriacInterface(Node):
     submit_order_service_name = "/ariac/submit_order"
 
     def __init__(self, node_name):
+        """
+        Initialize the AriacInterface node.
+
+        :param node_name: Name of the ROS node.
+        """
         super().__init__(node_name)
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
@@ -44,15 +52,16 @@ class AriacInterface(Node):
         self.custom_timer = CustomTimer(self)
 
     def monitor_state_callback(self):
-
+        """
+        Callback function to monitor the state of the competition.
+        """
         if self.comp_state.competition_started and not self.comp_state.competition_ended:
-            # print("STARTED Do other task now!!!")
-            self.fufill_orders()
+            self.fulfill_orders()
 
-    def fufill_orders(self):
-
-        # self.get_logger().info('Waiting for Orders!!')
-         
+    def fulfill_orders(self):
+        """
+        Method to fulfill orders during the competition.
+        """
         if self.custom_timer.check_wait_flag():
             return
 
@@ -60,23 +69,17 @@ class AriacInterface(Node):
 
         if len(self.order_queue)>0:
             try:
-                ## wait for 15 seconds before processing the order and moving to task 6
                 if self.custom_timer.check_delay_flag():
                     return
                 self.get_logger().info("Got the Order!!")
                 order = self.order_queue.popleft()
-                ## Now the order if higher priority come after 15 secons our queue will be updated
-                
+
                 self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
-                '''
-                Do the task 6 and task 7
-                '''
-                # print("started shipping,",order)
+
                 data = self.ship_order.lock_move_agv(order)
                 if data is None:
                     self.get_logger().warn("Unable to ship!")
-                # print("submit order",data)
-            
+
                 while not self.order_submit.Submit_Order(agv_num=data[1],order_id=data[0]): continue
             except Exception as e:
                 self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
@@ -88,6 +91,9 @@ class AriacInterface(Node):
 
 
 def main(args=None):
+    """
+    Main function to initialize the ROS node and spin the executor.
+    """
     rclpy.init(args=args)
     executor = MultiThreadedExecutor()
     
