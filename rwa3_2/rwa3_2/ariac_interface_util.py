@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
 
 import time
 from collections import deque
+from copy import deepcopy
+
 
 from rclpy.node import Node
 import rclpy 
@@ -49,7 +50,11 @@ class AriacInterface(Node):
         self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
-        self.custom_timer = CustomTimer(self)
+        # self.custom_timer_t0 = CustomTimer(self)
+        # self.custom_timer_t1 = CustomTimer(self)
+        self.current_order_priority = False
+        self.current_order = None
+        self.pending_order = None
 
     def monitor_state_callback(self):
         """
@@ -62,17 +67,36 @@ class AriacInterface(Node):
         """
         Method to fulfill orders during the competition.
         """
-        if self.custom_timer.check_wait_flag():
-            return
-
         self.get_logger().info("Done waiting, taking order now, Delay 15 secs for new order!!")
 
         if len(self.order_queue)>0:
             try:
-                if self.custom_timer.check_delay_flag():
-                    return
-                self.get_logger().info("Got the Order!!")
                 order = self.order_queue.popleft()
+                # if len(self.current_order)==0:
+                if order.order_priority and not self.current_order_priority:
+                    self.current_order_priority = order.order_priority
+                    self.pending_order = self.current_order
+                    self.pending_order[1].pause()
+                    self.get_logger().info(f"Keeping the {self.pending_order[0].order_id} to pending!!")
+                    self.current_order = (order,CustomTimer(self,"t1"),order.order_priority)
+                    self.get_logger().info(f"Got the High Priority Order Changing to it of id {self.current_order[0].order_id}!!")
+                        # return
+                elif self.current_order is None and self.pending_order is None:
+                    self.current_order = (order,CustomTimer(self,"t0"),self.current_order_priority)
+                else:
+                    self.order_queue.appendleft(order)
+            except Exception as e:
+                self.get_logger().warn(f"Unable to take order because of {e}!")
+
+        if self.current_order is not None:
+            order, t, curr_priority = self.current_order
+            try:
+                # s = self.node.get_clock().now()
+                if t.check_delay_flag():
+                    return
+                # end_t = self.node.get_clock().now()
+                self.get_logger().info("Got the Order!!")
+                
 
                 self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
 
@@ -81,29 +105,15 @@ class AriacInterface(Node):
                     self.get_logger().warn("Unable to ship!")
 
                 while not self.order_submit.Submit_Order(agv_num=data[1],order_id=data[0]): continue
+                self.current_order = self.pending_order
+                if self.pending_order is not None:
+                    self.current_order_priority = self.pending_order[2]
+                self.pending_order = None
             except Exception as e:
                 self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
         else:
             if self.comp_state.all_orders_recieved:
                 self.comp_state.competition_ended = True
 
-        self.custom_timer.reset_flags()
+        # self.custom_timer.reset_flags()
 
-
-def main(args=None):
-    """
-    Main function to initialize the ROS node and spin the executor.
-    """
-    rclpy.init(args=args)
-    executor = MultiThreadedExecutor()
-    
-    interface = AriacInterface("ariac_interface")
-    executor.add_node(interface)
-    executor.spin()
-
-    interface.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
