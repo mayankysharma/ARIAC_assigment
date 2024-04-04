@@ -13,10 +13,14 @@ from std_srvs.srv import Trigger
 
 class CompetitionState():
     '''
-    Class for a competition interface node.
+    Class for managing competition state.
 
     Args:
-        Node (rclpy.node.Node): Parent class for ROS nodes
+        node (rclpy.node.Node): ROS node instance.
+        topic_name (str): Name of the competition state topic.
+        start_service (str): Name of the service to start the competition.
+        end_service (str): Name of the service to end the competition.
+        callback_group: Callback group for this class.
 
     Raises:
         KeyboardInterrupt: Exception raised when the user uses Ctrl+C to kill a process
@@ -32,6 +36,16 @@ class CompetitionState():
     '''Dictionary for converting CompetitionState constants to strings'''
 
     def __init__(self, node, topic_name, start_service, end_service, callback_group):
+        '''
+        Initialize CompetitionState.
+
+        Args:
+            node (rclpy.node.Node): ROS node instance.
+            topic_name (str): Name of the competition state topic.
+            start_service (str): Name of the service to start the competition.
+            end_service (str): Name of the service to end the competition.
+            callback_group: Callback group for this class.
+        '''
 
         sim_time = Parameter(
             "use_sim_time",
@@ -43,7 +57,6 @@ class CompetitionState():
         self.topic_name = topic_name
         self.start_service = start_service
         self.end_service = end_service
-
 
         node.set_parameters([sim_time])
         # Service client for starting the competition
@@ -59,21 +72,25 @@ class CompetitionState():
             self.topic_name,
             self._competition_state_cb,
             10,
-            callback_group = callback_group)
+            callback_group=callback_group)
 
         # Store the state of the competition
-        self._competition_state : CompetitionStateMsg = None
-        # additional flag for checking if the competition state is ended this flag status will be changed by ariac interface once all order completed
+        self._competition_state: CompetitionStateMsg = None
+        # Flag for checking if the competition state is ended
         self.competition_ended = False 
         
-        self.competition_started = False # addiitional flage for checking if the state is change to start
+        # Flag for checking if the state has changed to start
+        self.competition_started = False
 
+        # Flag for checking if all orders are received
         self.all_orders_recieved = False
 
     def _competition_state_cb(self, msg: CompetitionStateMsg):
-        f'''Callback for the topic {self.topic_name}
-        Arguments:
-            msg -- CompetitionState message
+        '''
+        Callback function for the competition state topic.
+
+        Args:
+            msg (CompetitionStateMsg): Message received on the competition state topic.
         '''
 
         # Log if competition state has changed
@@ -83,7 +100,7 @@ class CompetitionState():
 
         self._competition_state = msg.competition_state
 
-        if self._competition_state == CompetitionStateMsg.STARTED or self._competition_state==CompetitionStateMsg.ENDED:
+        if self._competition_state == CompetitionStateMsg.STARTED or self._competition_state == CompetitionStateMsg.ENDED:
             return
 
         if self._competition_state == CompetitionStateMsg.ORDER_ANNOUNCEMENTS_DONE:
@@ -96,24 +113,23 @@ class CompetitionState():
         
         # Wait for competition to be ready
         if self._competition_state == CompetitionStateMsg.READY and not self.competition_started:
-            # return 
             self.start_competition()
 
-
     def terminate_competition(self):
+        '''
+        Terminate the competition.
+        '''
+
         self.node.get_logger().info('Terminating Competition')
 
         # Check if service is available
         while not self._end_competition_client.wait_for_service(timeout_sec=3.0):
             self.node.get_logger().error(f'Service \'{self.end_service}\' is not available, waiting...')
-            # return 
 
         # Create trigger request and call starter service
         self.node.get_logger().info("calling request for terminating")
         request = Trigger.Request()
-        '''
-        Tried async callback for service not working with multithreading no use to do async again. not sure why it is not running. but sync work fine.
-        '''
+
         response = self._end_competition_client.call(request)
 
         if response.success:
@@ -124,20 +140,20 @@ class CompetitionState():
             return 
 
     def start_competition(self):
+        '''
+        Start the competition.
+        '''
         
         self.node.get_logger().info('Competition is ready. Starting...')
 
         # Check if service is available
         while not self._start_competition_client.wait_for_service(timeout_sec=3.0):
             self.node.get_logger().error(f'Service \'{self.start_service}\' is not available, waiting...')
-            # return 
 
         # Create trigger request and call starter service
         self.node.get_logger().info("calling request for starting")
         request = Trigger.Request()
-        '''
-        Tried async callback for service not working with multithreading no use to do async again. not sure why it is not running. but sync work fine.
-        '''
+
         response = self._start_competition_client.call(request)
 
         if response.success:
@@ -147,3 +163,4 @@ class CompetitionState():
         else:
             self.node.get_logger().warn('Unable to start competition')
             return 
+

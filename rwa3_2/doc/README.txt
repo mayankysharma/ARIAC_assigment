@@ -9,7 +9,7 @@
 
 ## Instructions to run 
 Make sure that the trial file `rwa3_spring2024.yaml` is put in the ariac_gazebo package in the config folder. Then do the following steps to run:
-* Clone the package in the src of the ARIAC workspace
+* Unzip the package in the src of the ARIAC workspace
 * cd in to the workspace ariac_ws/
 ```bash
 cd ariac_ws/

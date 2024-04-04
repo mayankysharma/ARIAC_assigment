@@ -27,6 +27,10 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
 )
+install(DIRECTORY
+  doc
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 install(PROGRAMS
   rwa3_2/comp_state.py

@@ -9,19 +9,18 @@ from ariac_msgs.msg import (
     Order as OrderMsg
 )
 
-
-
 @dataclass
 class KittingPart:
+    ''' 
+    Class to store information about a kitting part message.
     '''
-    Class to store information about a KittingPartMsg.
-    '''
+
     _quadrant: int
     _part: PartMsg
 
     @property
     def quadrant(self) -> int:
-        '''
+        ''' 
         Returns the quadrant of the part.
 
         Returns:
@@ -31,7 +30,7 @@ class KittingPart:
 
     @property
     def part(self) -> PartMsg:
-        '''
+        ''' 
         Returns the type of the part.
 
         Returns:
@@ -39,12 +38,12 @@ class KittingPart:
         '''
         return self._part
 
-
 @dataclass
 class KittingTask:
+    ''' 
+    Class to store information about a kitting task message.
     '''
-    Class to store information about a KittingTaskMsg.
-    '''
+
     _agv_number: int
     _tray_id: int
     _destination: int
@@ -52,7 +51,7 @@ class KittingTask:
 
     @property
     def agv_number(self) -> int:
-        '''
+        ''' 
         Returns the AGV number.
 
         Returns:
@@ -62,7 +61,7 @@ class KittingTask:
 
     @property
     def tray_id(self) -> int:
-        '''
+        ''' 
         Returns the tray ID.
 
         Returns:
@@ -72,7 +71,7 @@ class KittingTask:
 
     @property
     def destination(self) -> int:
-        '''
+        ''' 
         Returns the destination.
 
         Returns:
@@ -82,7 +81,7 @@ class KittingTask:
 
     @property
     def parts(self) -> List[KittingPart]:
-        '''
+        ''' 
         Returns the list of parts.
 
         Returns:
@@ -96,6 +95,12 @@ class Order:
     '''
 
     def __init__(self, msg: OrderMsg) -> None:
+        ''' 
+        Initialize the Order object.
+
+        Args:
+            msg (OrderMsg): The order message.
+        '''
         self.order_id = msg.id
         self.order_type = msg.type
         self.order_priority = msg.priority
@@ -105,6 +110,5 @@ class Order:
                                           msg.kitting_task.tray_id,
                                           msg.kitting_task.destination,
                                           msg.kitting_task.parts)
-
         else:
             self.order_task = None

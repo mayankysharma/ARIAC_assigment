@@ -7,6 +7,12 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    '''
+    Generates a LaunchDescription for launching the ARIAC interface node.
+
+    Returns:
+        LaunchDescription: The LaunchDescription instance.
+    '''
     ld = LaunchDescription()
     # Interface node
     rwa3_interface = Node(
@@ -18,4 +24,4 @@ def generate_launch_description():
     )
 
     ld.add_action(rwa3_interface)
-    return ld
+    return ld  # Return LaunchDescription instance

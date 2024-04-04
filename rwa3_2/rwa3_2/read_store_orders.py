@@ -11,133 +11,120 @@ from ariac_msgs.msg import (
 )
 from utils import(
     Order,
-  
-
     KittingTask,
-
     KittingPart
 )
 
 class ReadStoreOrders():
-    _destinations = {
+    '''
+    Class for subscribing to order messages and storing them in a queue.
 
+    Args:
+        node (rclpy.node.Node): The ROS node.
+        topic_name (str): Name of the topic where orders are published.
+        order_queue (collections.deque): Queue to store orders.
+        callback_group: Callback group for this class.
+    '''
+
+    _AGV_destinations = {
         AGVStatusMsg.KITTING: 'kitting station',
-
         AGVStatusMsg.ASSEMBLY_FRONT: 'front assembly station',
-
         AGVStatusMsg.ASSEMBLY_BACK: 'back assembly station',
-
         AGVStatusMsg.WAREHOUSE: 'warehouse',
-
-        }
-
+    }
     '''Dictionary for converting AGVDestination constants to strings'''
 
-
-    _stations = {
-
+    _Assembly_stations = {
         AssemblyTaskMsg.AS1: 'assembly station 1',
-
         AssemblyTaskMsg.AS2: 'assembly station 2',
-
         AssemblyTaskMsg.AS3: 'assembly station 3',
-
         AssemblyTaskMsg.AS4: 'assembly station 4',
+    }
 
-        }
-    _part_colors = {
-
+    _color_of_parts = {
         PartMsg.RED: 'red',
-
         PartMsg.BLUE: 'blue',
-
         PartMsg.GREEN: 'green',
-
         PartMsg.ORANGE: 'orange',
-
         PartMsg.PURPLE: 'purple',
-
     }
     '''Dictionary for converting Part color constants to strings'''
 
-
-    _part_colors_emoji = {
-
+    _part_color_symbol = {
         PartMsg.RED: '🟥',
-
         PartMsg.BLUE: '🟦',
-
         PartMsg.GREEN: '🟩',
-
         PartMsg.ORANGE: '🟧',
-
         PartMsg.PURPLE: '🟪',
-
     }
-    _part_types = {
 
+    _type_of_parts = {
         PartMsg.BATTERY: 'battery',
-
         PartMsg.PUMP: 'pump',
-
         PartMsg.REGULATOR: 'regulator',
-
         PartMsg.SENSOR: 'sensor',
-
     }
+    '''Dictionary for converting Part type constants to strings'''
 
-    '''Dictionary for converting AssemblyTask constants to strings'''
+    def __init__(self, node, topic_name, order_queue, callback_group):
+        '''
+        Initialize ReadStoreOrders.
 
-    def __init__(self, node, topic_name, order_queue,callback_group):
+        Args:
+            node (rclpy.node.Node): The ROS node.
+            topic_name (str): Name of the topic where orders are published.
+            order_queue (collections.deque): Queue to store orders.
+            callback_group: Callback group for this class.
+        '''
         sim_time = Parameter(
             "use_sim_time",
             rclpy.Parameter.Type.BOOL,
             True
         )
         self.node = node
-        #topic to which the orders are published
-        self.order_topic=topic_name
-        #List for now for the orders
+        self.order_topic = topic_name
         self._orders = order_queue
-        # Subscriber to the order topic
-
-        self.orders_sub = node.create_subscription(OrderMsg, self.order_topic, self._orders_cb,10,callback_group = callback_group)
-
-
-        # Flag for parsing incoming orders
-
-        self._parse_incoming_order = True
+        self.orders_subcriber = node.create_subscription(OrderMsg, self.order_topic, self._orders_callback, 10, callback_group=callback_group)
+        self._parsing_Flag = True
         node.set_parameters([sim_time])
 
-        # List of orders
-
-        # self._orders = []
     @property
-
     def orders(self):
-
-        return self._orders
-    @property
-
-    def parse_incoming_order(self):
-
-        return self._parse_incoming_order
-    @parse_incoming_order.setter
-
-    def parse_incoming_order(self, value=True):
-
-        self._parse_incoming_order = value
-        
-    def _orders_cb(self, msg: Order):
-
-        '''Callback for the topic /ariac/orders
-
-        Arguments:
-
-            msg -- Order message
-
         '''
+        Property to access the orders queue.
 
+        Returns:
+            collections.deque: The queue containing orders.
+        '''
+        return self._orders
+
+    @property
+    def _the_order_to_parse(self):
+        '''
+        Property to get the parsing flag.
+
+        Returns:
+            bool: The parsing flag indicating if the order should be parsed.
+        '''
+        return self._parsing_Flag
+    
+    @_the_order_to_parse.setter
+    def _the_order_to_parse(self, value=True):
+        '''
+        Setter for the parsing flag.
+
+        Args:
+            value (bool): The value to set for the parsing flag.
+        '''
+        self._parsing_Flag = value
+        
+    def _orders_callback(self, msg: Order):
+        '''
+        Callback function for order messages.
+
+        Args:
+            msg (Order): The received order message.
+        '''
         order = Order(msg)
 
         if order.order_priority:
@@ -145,108 +132,66 @@ class ReadStoreOrders():
         else:
             self._orders.append(order)
 
-        if self._parse_incoming_order:
-            print("Here")
-            self.node.get_logger().info(self._parse_order(order))
+        if self._parsing_Flag:
+            self.node.get_logger().info(self._parse_the_order(order))
             
     def _parse_kitting_task(self, kitting_task: KittingTask):
-
         '''
-
-        Parses a KittingTask object and returns a string representation.
-
+        Parses a kitting task and returns a string representation.
 
         Args:
-
-            kitting_task (KittingTask): KittingTask object to parse
-
+            kitting_task (KittingTask): The kitting task object.
 
         Returns:
-
-            str: String representation of the KittingTask object
-
+            str: String representation of the kitting task.
         '''
-
         output = 'Type: Kitting\n'
-
         output += '==========================\n'
-
-        output += f'AGV: {kitting_task.agv_number}\n'
-
-        output += f'Destination: {ReadStoreOrders._destinations[kitting_task.destination]}\n'
-
+        output += f'AGV Number: {kitting_task.agv_number}\n'
+        output += f'Destination: {ReadStoreOrders._AGV_destinations[kitting_task.destination]}\n'
         output += f'Tray ID: {kitting_task.tray_id}\n'
-
         output += 'Products:\n'
-
         output += '==========================\n'
-
 
         quadrants = {1: "Quadrant 1: -",
-
-                    2: "Quadrant 2: -",
-
-                    3: "Quadrant 3: -",
-
-                    4: "Quadrant 4: -"}
-
+                     2: "Quadrant 2: -",
+                     3: "Quadrant 3: -",
+                     4: "Quadrant 4: -"}
 
         for i in range(1, 5):
-
             product: KittingPart
-
             for product in kitting_task.parts:
-
                 if i == product.quadrant:
-
-                    part_color = ReadStoreOrders._part_colors[product.part.color].capitalize()
-
-                    part_color_emoji = ReadStoreOrders._part_colors_emoji[product.part.color]
-
-                    part_type = ReadStoreOrders._part_types[product.part.type].capitalize()
-
-                    quadrants[i] = f'Quadrant {i}: {part_color_emoji} {part_color} {part_type}'
+                    _color_of_parts = ReadStoreOrders._color_of_parts[product.part.color].capitalize()
+                    _part_color_symbol = ReadStoreOrders._part_color_symbol[product.part.color]
+                    _type_of_parts = ReadStoreOrders._type_of_parts[product.part.type].capitalize()
+                    quadrants[i] = f'Quadrant {i}: {_part_color_symbol} {_color_of_parts} {_type_of_parts}'
 
         output += f'\t{quadrants[1]}\n'
-
         output += f'\t{quadrants[2]}\n'
-
         output += f'\t{quadrants[3]}\n'
-
         output += f'\t{quadrants[4]}\n'
 
-
         return output
-    def _parse_order(self, order: Order):
 
-        '''Parse an order message and return a string representation.
-
+    def _parse_the_order(self, order: Order):
+        '''
+        Parse an order message and return a string representation.
 
         Args:
-
-            order (Order) -- Order message
-
+            order (Order): The order message.
 
         Returns:
-
-            String representation of the order message
-
+            str: String representation of the order message.
         '''
-
         output = '\n\n==========================\n'
-
-        output += f'Received Order: {order.order_id}\n'
-
-        output += f'Priority: {order.order_priority}\n'
-
+        output += f'Order ID of Received Order: {order.order_id}\n'
+        output += f'Priority of the Order : {order.order_priority}\n'
 
         if order.order_type == OrderMsg.KITTING:
-
             output += self._parse_kitting_task(order.order_task)
         else:
-
             output += 'Type: Unknown\n'
 
         return output
-        
 
