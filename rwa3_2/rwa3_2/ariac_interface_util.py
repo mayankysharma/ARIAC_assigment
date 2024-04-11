@@ -18,6 +18,9 @@ from ship_orders import ShipOrders
 from submit_orders import OrderSubmission  
 from ariac_msgs.msg import (
     CompetitionState as CompetitionStateMsg,
+    AdvancedLogicalCameraImage as AdvancedLogicalCameraImageMsg,
+    Part as PartMsg,
+    PartPose as PartPoseMsg,
 )
 
 class AriacInterface(Node):
@@ -25,7 +28,9 @@ class AriacInterface(Node):
     Class representing the interface for managing ARIAC competition tasks.
     """
     
-    order_topic = "/ariac/orders"
+    order_topic1 = "/ariac/orders"
+    order_topic2 = "/ariac/sensors/advanced_camera_0/image"
+    
     comp_start_state_service_name = "/ariac/start_competition"
     comp_end_state_service_name = "/ariac/end_competition"
     comp_state_topic_name = "/ariac/competition_state"
@@ -49,7 +54,7 @@ class AriacInterface(Node):
 
         self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
-        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
+        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,AriacInterface.order_topic2,self.order_queue,callback_group=group_reentrant1)
         # self.custom_timer_t0 = CustomTimer(self)
         # self.custom_timer_t1 = CustomTimer(self)
         self.current_order_priority = False

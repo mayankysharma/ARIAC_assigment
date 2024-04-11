@@ -73,7 +73,7 @@ class ReadStoreOrders():
     }
     '''Dictionary for converting Part type constants to strings'''
 
-    def __init__(self, node, topic_name, order_queue, callback_group):
+    def __init__(self, node, topic_name1,topic_name2, order_queue, callback_group):
         '''
         Initialize ReadStoreOrders.
 
@@ -89,15 +89,16 @@ class ReadStoreOrders():
             True
         )
         self.node = node
-        self.order_topic = topic_name
+        self.order_topic1 = topic_name1
+        self.order_topic2 = topic_name2
         self._orders = order_queue
-        self.orders_subcriber = node.create_subscription(OrderMsg, self.order_topic, self._orders_callback, 10, callback_group=callback_group)
+        self.orders_subcriber = node.create_subscription(OrderMsg, self.order_topic1, self._orders_callback, 10, callback_group=callback_group)
         self._parsing_Flag = True
         node.set_parameters([sim_time])
-# Subscriber to the logical camera topic
-        self._advanced_camera0_sub = self.create_subscription(
+        # Subscriber to the logical camera topic
+        self._advanced_camera0_sub = node.create_subscription(
             AdvancedLogicalCameraImageMsg,
-            '/ariac/sensors/advanced_camera_0/image',
+            self.order_topic2,
             self._advanced_camera0_cb,
             qos_profile_sensor_data)
 
@@ -176,10 +177,10 @@ class ReadStoreOrders():
         for i, part_pose in enumerate(image._part_poses):
             part_pose: PartPoseMsg
             output += '==========================\n'
-            part_color = ReadStoreOrders._part_colors[part_pose.part.color].capitalize()
-            part_color_emoji = ReadStoreOrders._part_colors_emoji[part_pose.part.color]
-            part_type = ReadStoreOrders._part_types[part_pose.part.type].capitalize()
-            output += f'Part {i+1}: {part_color_emoji} {part_color} {part_type}\n'
+            _color_of_parts = ReadStoreOrders._color_of_parts[part_pose.part.color].capitalize()
+            _part_color_symbol = ReadStoreOrders._part_color_symbol[part_pose.part.color]
+            _type_of_parts = ReadStoreOrders._type_of_parts[part_pose.part.type].capitalize()
+            output += f'Part {i+1}: {_part_color_symbol} {_color_of_parts} {_type_of_parts}\n'
             output += '--------------------------\n'
             output += 'Camera Frame\n'
             output += '--------------------------\n'
