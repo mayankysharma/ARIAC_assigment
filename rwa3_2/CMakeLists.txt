@@ -11,7 +11,7 @@ find_package(std_msgs REQUIRED)
 find_package(ariac_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_srvs REQUIRED)
-
+find_package(orocos_kdl REQUIRED)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

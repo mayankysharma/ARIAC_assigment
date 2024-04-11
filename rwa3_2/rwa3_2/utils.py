@@ -1,7 +1,13 @@
 import math
 from typing import List, Tuple
 from dataclasses import dataclass
-
+import PyKDL
+from geometry_msgs.msg import (
+    Pose,
+    PoseStamped, 
+    Vector3,
+    Quaternion
+)
 from ariac_msgs.msg import (
     PartPose as PartPoseMsg,
     KitTrayPose as KitTrayPoseMsg,
@@ -9,6 +15,90 @@ from ariac_msgs.msg import (
     Order as OrderMsg
 )
 
+def Mult_pose(Pose_1: Pose, Pose_2: Pose):
+    '''
+    Using KDL to multiply two poses together.
+
+    This function takes two Pose objects and calculates the result of multiplying them together using KDL (Kinematics and Dynamics Library).
+
+    Args:
+        Pose_1 (Pose): Pose of the first frame
+        Pose_2 (Pose): Pose of the second frame
+
+    Returns:
+        Final_Pose (Pose): Pose of the resulting frame
+    '''
+
+    # Extract orientation and position components from Pose_1
+    Orientation_Frame_1 = Pose_1.orientation
+    Frame1 = PyKDL.Frame(
+        PyKDL.Rotation.Quaternion(Orientation_Frame_1.x, Orientation_Frame_1.y, Orientation_Frame_1.z, Orientation_Frame_1.w),
+        PyKDL.Vector(Pose_1.position.x, Pose_1.position.y, Pose_1.position.z))
+
+    # Extract orientation and position components from Pose_2
+    Orientation_Frame_2 = Pose_2.orientation
+    Frame2 = PyKDL.Frame(
+        PyKDL.Rotation.Quaternion(Orientation_Frame_2.x, Orientation_Frame_2.y, Orientation_Frame_2.z, Orientation_Frame_2.w),
+        PyKDL.Vector(Pose_2.position.x, Pose_2.position.y, Pose_2.position.z))
+
+    # Multiply the two frames together to get the resulting frame
+    Resulting_Frame3 = Frame1 * Frame2
+
+    # Extract position components from the resulting frame and assign to Final_pose
+    Final_pose = Pose()
+    Final_pose.position.x = Resulting_Frame3.p.x()
+    Final_pose.position.y = Resulting_Frame3.p.y()
+    Final_pose.position.z = Resulting_Frame3.p.z()
+
+    # Extract quaternion components from the resulting frame and assign to Final_pose
+    Quaternion_orientation = Resulting_Frame3.M.GetQuaternion()
+    Final_pose.orientation.x = Quaternion_orientation[0]
+    Final_pose.orientation.y = Quaternion_orientation[1]
+    Final_pose.orientation.z = Quaternion_orientation[2]
+    Final_pose.orientation.w = Quaternion_orientation[3]
+
+    # Return the final pose
+    return Final_pose
+def Quart_to_RPY(quart: Quaternion) -> Tuple[float, float, float]:
+    ''' 
+    Use KDL to convert a quaternion to euler angles roll, pitch, yaw.
+    Args:
+        q (Quaternion): quaternion to convert
+    Returns:
+        Tuple[float, float, float]: roll, pitch, yaw
+    '''
+    
+    RPY = PyKDL.Rotation.Quaternion(quart.x, quart.y, quart.z, quart.w)
+    return RPY.GetRPY()
+
+def RAD_TO_DEGREE(radians: float) -> str:
+    '''
+    Converts radians to degrees in the domain [-PI, PI]
+    Args:
+        radians (float): value in radians
+    Returns:
+        str: String representing the value in degrees
+    '''
+    
+    degrees = math.degrees(radians)
+    if degrees > 180:
+        degrees = degrees - 360
+    elif degrees < -180:
+        degrees = degrees + 360
+
+    if -1 < degrees < 1:
+        degrees = 0 
+    
+    return f'{degrees:.0f}' + chr(176)
+
+@dataclass
+class AdvancedLogicalCameraImage:
+    '''
+    Class to store information about a AdvancedLogicalCameraImageMsg
+    '''
+    _part_poses: PartPoseMsg
+    _tray_poses: KitTrayPoseMsg
+    _sensor_pose: Pose
 @dataclass
 class KittingPart:
     ''' 

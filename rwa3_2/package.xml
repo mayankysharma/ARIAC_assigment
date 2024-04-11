@@ -16,7 +16,9 @@
   <depend>std_msgs</depend>
   <depend>ariac_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>rclcpy</depend>
+  <depend>rclpy</depend>
+  <depend>orocos_kdl</depend>
+  <depend>python3-pykdl</depend>
   <depend>geometry_msgs</depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

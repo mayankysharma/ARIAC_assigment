@@ -2,17 +2,24 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-
+from rclpy.qos import qos_profile_sensor_data
 from ariac_msgs.msg import (
     Order as OrderMsg,
     AGVStatus as AGVStatusMsg,
     AssemblyTask as AssemblyTaskMsg,
-    Part as PartMsg
+    Part as PartMsg,
+    AdvancedLogicalCameraImage as AdvancedLogicalCameraImageMsg,
+    PartPose as PartPoseMsg
 )
 from utils import(
     Order,
     KittingTask,
-    KittingPart
+    KittingPart,
+    Mult_pose,
+    Quart_to_RPY,
+    RAD_TO_DEGREE,
+    AdvancedLogicalCameraImage
+    
 )
 
 class ReadStoreOrders():
@@ -87,6 +94,28 @@ class ReadStoreOrders():
         self.orders_subcriber = node.create_subscription(OrderMsg, self.order_topic, self._orders_callback, 10, callback_group=callback_group)
         self._parsing_Flag = True
         node.set_parameters([sim_time])
+# Subscriber to the logical camera topic
+        self._advanced_camera0_sub = self.create_subscription(
+            AdvancedLogicalCameraImageMsg,
+            '/ariac/sensors/advanced_camera_0/image',
+            self._advanced_camera0_cb,
+            qos_profile_sensor_data)
+
+        # Store each camera image as an AdvancedLogicalCameraImage object
+        self._camera_image: AdvancedLogicalCameraImage = None
+        
+    @property
+    def camera_image(self):
+        return self._camera_image    
+    def _advanced_camera0_cb(self, msg: AdvancedLogicalCameraImageMsg):
+        '''Callback for the topic /ariac/sensors/advanced_camera_0/image
+
+        Arguments:
+            msg -- AdvancedLogicalCameraImage message
+        '''
+        self._camera_image = AdvancedLogicalCameraImage(msg.part_poses,
+                                                        msg.tray_poses,
+                                                        msg.sensor_pose)
 
     @property
     def orders(self):
@@ -134,7 +163,57 @@ class ReadStoreOrders():
 
         if self._parsing_Flag:
             self.node.get_logger().info(self._parse_the_order(order))
-            
+    
+    def parse_advanced_camera_image(self, image: AdvancedLogicalCameraImage) -> str:
+        '''
+        Parse an AdvancedLogicalCameraImage message and return a string representation.
+        '''
+
+        if len(image._part_poses) == 0:
+            return 'No parts detected'
+
+        output = '\n\n'
+        for i, part_pose in enumerate(image._part_poses):
+            part_pose: PartPoseMsg
+            output += '==========================\n'
+            part_color = CompetitionInterface._part_colors[part_pose.part.color].capitalize()
+            part_color_emoji = CompetitionInterface._part_colors_emoji[part_pose.part.color]
+            part_type = CompetitionInterface._part_types[part_pose.part.type].capitalize()
+            output += f'Part {i+1}: {part_color_emoji} {part_color} {part_type}\n'
+            output += '--------------------------\n'
+            output += 'Camera Frame\n'
+            output += '--------------------------\n'
+
+            output += '  Position:\n'
+            output += f'    x: {part_pose.pose.position.x:.3f} (m)\n'
+            output += f'    y: {part_pose.pose.position.y:.3f} (m)\n'
+            output += f'    z: {part_pose.pose.position.z:.3f} (m)\n'
+
+            roll, pitch, yaw = rpy_from_quaternion(part_pose.pose.orientation)
+            output += '  Orientation:\n'
+            output += f'    roll: {rad_to_deg_str(roll)}\n'
+            output += f'    pitch: {rad_to_deg_str(pitch)}\n'
+            output += f'    yaw: {rad_to_deg_str(yaw)}\n'
+
+            part_world_pose = multiply_pose(image._sensor_pose, part_pose.pose)
+            output += '--------------------------\n'
+            output += 'World Frame\n'
+            output += '--------------------------\n'
+
+            output += '  Position:\n'
+            output += f'    x: {part_world_pose.position.x:.3f} (m)\n'
+            output += f'    y: {part_world_pose.position.y:.3f} (m)\n'
+            output += f'    z: {part_world_pose.position.z:.3f} (m)\n'
+
+            roll, pitch, yaw = rpy_from_quaternion(part_world_pose.orientation)
+            output += '  Orientation:\n'
+            output += f'    roll: {rad_to_deg_str(roll)}\n'
+            output += f'    pitch: {rad_to_deg_str(pitch)}\n'
+            output += f'    yaw: {rad_to_deg_str(yaw)}\n'
+
+            output += '==========================\n\n'
+
+        return output       
     def _parse_kitting_task(self, kitting_task: KittingTask):
         '''
         Parses a kitting task and returns a string representation.
