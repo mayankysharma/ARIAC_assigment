@@ -176,9 +176,9 @@ class ReadStoreOrders():
         for i, part_pose in enumerate(image._part_poses):
             part_pose: PartPoseMsg
             output += '==========================\n'
-            part_color = CompetitionInterface._part_colors[part_pose.part.color].capitalize()
-            part_color_emoji = CompetitionInterface._part_colors_emoji[part_pose.part.color]
-            part_type = CompetitionInterface._part_types[part_pose.part.type].capitalize()
+            part_color = ReadStoreOrders._part_colors[part_pose.part.color].capitalize()
+            part_color_emoji = ReadStoreOrders._part_colors_emoji[part_pose.part.color]
+            part_type = ReadStoreOrders._part_types[part_pose.part.type].capitalize()
             output += f'Part {i+1}: {part_color_emoji} {part_color} {part_type}\n'
             output += '--------------------------\n'
             output += 'Camera Frame\n'
@@ -189,13 +189,13 @@ class ReadStoreOrders():
             output += f'    y: {part_pose.pose.position.y:.3f} (m)\n'
             output += f'    z: {part_pose.pose.position.z:.3f} (m)\n'
 
-            roll, pitch, yaw = rpy_from_quaternion(part_pose.pose.orientation)
+            roll, pitch, yaw = Quart_to_RPY(part_pose.pose.orientation)
             output += '  Orientation:\n'
-            output += f'    roll: {rad_to_deg_str(roll)}\n'
-            output += f'    pitch: {rad_to_deg_str(pitch)}\n'
-            output += f'    yaw: {rad_to_deg_str(yaw)}\n'
+            output += f'    roll: {RAD_TO_DEGREE(roll)}\n'
+            output += f'    pitch: {RAD_TO_DEGREE(pitch)}\n'
+            output += f'    yaw: {RAD_TO_DEGREE(yaw)}\n'
 
-            part_world_pose = multiply_pose(image._sensor_pose, part_pose.pose)
+            part_world_pose = Mult_pose(image._sensor_pose, part_pose.pose)
             output += '--------------------------\n'
             output += 'World Frame\n'
             output += '--------------------------\n'
@@ -205,11 +205,11 @@ class ReadStoreOrders():
             output += f'    y: {part_world_pose.position.y:.3f} (m)\n'
             output += f'    z: {part_world_pose.position.z:.3f} (m)\n'
 
-            roll, pitch, yaw = rpy_from_quaternion(part_world_pose.orientation)
+            roll, pitch, yaw = Quart_to_RPY(part_world_pose.orientation)
             output += '  Orientation:\n'
-            output += f'    roll: {rad_to_deg_str(roll)}\n'
-            output += f'    pitch: {rad_to_deg_str(pitch)}\n'
-            output += f'    yaw: {rad_to_deg_str(yaw)}\n'
+            output += f'    roll: {RAD_TO_DEGREE(roll)}\n'
+            output += f'    pitch: {RAD_TO_DEGREE(pitch)}\n'
+            output += f'    yaw: {RAD_TO_DEGREE(yaw)}\n'
 
             output += '==========================\n\n'
 

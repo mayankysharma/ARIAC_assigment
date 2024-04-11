@@ -59,6 +59,7 @@ def Mult_pose(Pose_1: Pose, Pose_2: Pose):
 
     # Return the final pose
     return Final_pose
+
 def Quart_to_RPY(quart: Quaternion) -> Tuple[float, float, float]:
     ''' 
     Use KDL to convert a quaternion to euler angles roll, pitch, yaw.
