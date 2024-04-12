@@ -47,6 +47,7 @@ install(PROGRAMS
   rwa4_2/ship_orders.py
   rwa4_2/submit_orders.py
   rwa4_2/utils.py
+  rwa4_2/sensor_read.py
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

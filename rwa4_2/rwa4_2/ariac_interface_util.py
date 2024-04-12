@@ -22,14 +22,14 @@ from ariac_msgs.msg import (
     Part as PartMsg,
     PartPose as PartPoseMsg,
 )
-
+from sensor_read import SensorRead
 class AriacInterface(Node):
     """
     Class representing the interface for managing ARIAC competition tasks.
     """
     
     order_topic1 = "/ariac/orders"
-    order_topic2 = "/ariac/sensors/advanced_camera_0/image"
+    sensor_topic1 = "/ariac/sensors/kts1_camera/image"
     
     comp_start_state_service_name = "/ariac/start_competition"
     comp_end_state_service_name = "/ariac/end_competition"
@@ -54,7 +54,9 @@ class AriacInterface(Node):
 
         self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
-        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,AriacInterface.order_topic2,self.order_queue,callback_group=group_reentrant1)
+        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
+        self.sensor_read=SensorRead(self,callback_group=group_reentrant1)
+        
         # self.custom_timer_t0 = CustomTimer(self)
         # self.custom_timer_t1 = CustomTimer(self)
         self.current_order_priority = False
@@ -72,7 +74,7 @@ class AriacInterface(Node):
         """
         Method to fulfill orders during the competition.
         """
-        self.get_logger().info("Done waiting, taking order now, Delay 15 secs for new order!!")
+        # self.get_logger().info("Done waiting, taking order now, Delay 15 secs for new order!!")
 
         if len(self.order_queue)>0:
             try:
@@ -97,12 +99,34 @@ class AriacInterface(Node):
             order, t, curr_priority = self.current_order
             try:
                 # s = self.node.get_clock().now()
-                if t.check_delay_flag():
-                    return
+                # if t.check_delay_flag():
+                #     return
                 # end_t = self.node.get_clock().now()
+                """
+                Example print for sensor information
+                - KITTING01
+                    - Kitting Tray:
+                        - ID: 1
+                        - Position (xyz): [-0.870000, -5.840000, 0.734989]
+                        - Orientation (rpy): [0.0, 0.0, 3.14]
+                    - Orange Battery:
+                        - Position (xyz): [-2.080000, 2.445000, 0.719998]
+                        - Orientation (rpy): [0.0, 0.0, 3.14]
+                    - Green Sensor:
+                        - Position (xyz): [-2.080000, 2.805000, 0.719998]
+                        - Orientation (rpy): [0.0, 0.0, 3.14
+                """
                 self.get_logger().info("Got the Order!!")
-                
-
+                for sensor_name, sensor_data in self.sensor_read.sensor_data.items():
+                    for sdata in sensor_data:
+                        if sdata["is_part"]:
+                            for pdata in order.order_task.parts:
+                                if sdata["type"]==pdata.type and sdata["color"] == pdata.color:
+                                    self.get_logger.info(f" Here is the sensor data: \n {sdata}")
+                        else:
+                            for tid in order.order_task.tray_id:
+                                if sdata["tray_id"]==tid:
+                                    self.get_logger.info(f" Here is the sensor data: \n {sdata}")
                 self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
 
                 data = self.ship_order.lock_move_agv(order)
