@@ -15,7 +15,7 @@ from ariac_msgs.msg import (
     Order as OrderMsg
 )
 
-def Mult_pose(Pose_1: Pose, Pose_2: Pose):
+def Mult_pose(Pose_1: Pose, Pose_2: Pose) -> Pose:
     '''
     Using KDL to multiply two poses together.
 
