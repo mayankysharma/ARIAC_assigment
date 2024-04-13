@@ -28,8 +28,7 @@ class AriacInterface(Node):
     Class representing the interface for managing ARIAC competition tasks.
     """
     
-    order_topic1 = "/ariac/orders"
-    order_topic2 = "/ariac/sensors/advanced_camera_0/image"
+    order_topic = "/ariac/orders"
     
     comp_start_state_service_name = "/ariac/start_competition"
     comp_end_state_service_name = "/ariac/end_competition"
@@ -54,7 +53,7 @@ class AriacInterface(Node):
 
         self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
-        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,AriacInterface.order_topic2,self.order_queue,callback_group=group_reentrant1)
+        self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic,self.order_queue,callback_group=group_reentrant1)
         # self.custom_timer_t0 = CustomTimer(self)
         # self.custom_timer_t1 = CustomTimer(self)
         self.current_order_priority = False
