@@ -121,11 +121,16 @@ class AriacInterface(Node):
                 tray = {}
                 # tray_rot = []
                 parts = {}
+                visited_data = []
                 for sensor_name, sensor_data in self.sensor_read.sensor_data.items():
                     for sdata in sensor_data:
                         if sdata["is_part"]:
                             for pdata in order.order_task.parts:
-                                if sdata["type"]==pdata.part.type and sdata["color"] == pdata.part.color:
+                                if (pdata.part.type, pdata.part.color, pdata.quadrant) in parts.keys():
+                                    continue
+                                if sdata["type"]==pdata.part.type and sdata["color"] == pdata.part.color and sdata["pose"] not in visited_data:
+                                    visited_data.append(sdata["pose"])
+
                                     # self.get_logger().info(f" Here is the sensor data for part: \n {sdata}")
                                     parts[(sdata["type"], sdata["color"], pdata.quadrant)] = f"""
                     - {ReadStoreOrders._color_of_parts[pdata.part.color]} {ReadStoreOrders._type_of_parts[pdata.part.type]}
@@ -141,6 +146,7 @@ class AriacInterface(Node):
                 order_details_print = f"""\n==========================
                 - {order.order_id}
                     - Kitting Tray"""
+                # print(parts)
                 for tray_id, tray_info in tray.items():
                     order_details_print += tray_info
                 for part_, part_details in parts.items():
