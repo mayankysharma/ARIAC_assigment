@@ -61,14 +61,14 @@ class SensorRead():
         
         self.node = node
         self.sensor_data=[]
-        print(sensor_config_path)
+        # print(sensor_config_path)
         with open(sensor_config_path,"r") as file:
             self.yaml_data = yaml.safe_load(file)
         # self.sensors_info = self.yaml_data["sensors"]
-        print(self.yaml_data)
+        # print(self.yaml_data)
         self.sensors_info = {}
         for sensor_name,info in self.yaml_data["sensors"].items():
-            print(info['type'])
+            # print(info['type'])
             self.sensors_info[sensor_name] = self.node.create_subscription(
                 ARIAC_SENSORS_2_Msg[info["type"]],
                 f"/ariac/sensors/{sensor_name}/{ARIAC_SENSORS_2_TYPE[info['type']]}",
@@ -76,7 +76,7 @@ class SensorRead():
                 qos_profile_sensor_data,callback_group=callback_group   
             )
 
-        self.sensor_data = []
+        self.sensor_data = {}
     # def read(self):
 
     
@@ -96,11 +96,11 @@ class SensorRead():
         Parse an AdvancedLogicalCameraImage message and return a string representation.
         '''
 
-        if len(image._part_poses) == 0:
-            self.node.get_logger().info('No parts detected')
+        # if len(image._part_poses) == 0:
+        #     self.node.get_logger().info('No parts detected')
         
-        if len(image._tray_poses)==0:
-            self.node.get_logger().info('No trays detected')
+        # if len(image._tray_poses)==0:
+        #     self.node.get_logger().info('No trays detected')
 
         output = []
         for i, part_pose in enumerate(image._part_poses):

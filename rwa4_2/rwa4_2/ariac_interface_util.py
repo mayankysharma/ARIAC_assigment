@@ -83,8 +83,9 @@ class AriacInterface(Node):
                 if order.order_priority and not self.current_order_priority:
                     self.current_order_priority = order.order_priority
                     self.pending_order = self.current_order
-                    self.pending_order[1].pause()
-                    self.get_logger().info(f"Keeping the {self.pending_order[0].order_id} to pending!!")
+                    # if self.pending_order is not None:
+                    #     self.pending_order[1].pause()
+                    # self.get_logger().info(f"Keeping the {self.pending_order[0].order_id} to pending!!")
                     self.current_order = (order,CustomTimer(self,"t1"),order.order_priority)
                     self.get_logger().info(f"Got the High Priority Order Changing to it of id {self.current_order[0].order_id}!!")
                         # return
@@ -116,17 +117,38 @@ class AriacInterface(Node):
                         - Position (xyz): [-2.080000, 2.805000, 0.719998]
                         - Orientation (rpy): [0.0, 0.0, 3.14
                 """
-                self.get_logger().info("Got the Order!!")
+                self.get_logger().info(f"Got the Order!! Order Id : {order.order_id}")
+                tray = {}
+                # tray_rot = []
+                parts = {}
                 for sensor_name, sensor_data in self.sensor_read.sensor_data.items():
                     for sdata in sensor_data:
                         if sdata["is_part"]:
                             for pdata in order.order_task.parts:
-                                if sdata["type"]==pdata.type and sdata["color"] == pdata.color:
-                                    self.get_logger.info(f" Here is the sensor data: \n {sdata}")
+                                if sdata["type"]==pdata.part.type and sdata["color"] == pdata.part.color:
+                                    # self.get_logger().info(f" Here is the sensor data for part: \n {sdata}")
+                                    parts[(sdata["type"], sdata["color"], pdata.quadrant)] = f"""
+                    - {ReadStoreOrders._color_of_parts[pdata.part.color]} {ReadStoreOrders._type_of_parts[pdata.part.type]}
+                        - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                        - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]"""
                         else:
-                            for tid in order.order_task.tray_id:
-                                if sdata["tray_id"]==tid:
-                                    self.get_logger.info(f" Here is the sensor data: \n {sdata}")
+                            if sdata["tray_id"]==order.order_task.tray_id:
+                                # self.get_logger().info(f" Here is the sensor data for tray: \n {sdata}")
+                                tray["tray_id"] = f"""
+                        - ID : {order.order_task.tray_id}
+                        - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                        - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]"""
+                order_details_print = f"""\n==========================
+                - {order.order_id}
+                    - Kitting Tray"""
+                for tray_id, tray_info in tray.items():
+                    order_details_print += tray_info
+                for part_, part_details in parts.items():
+                    order_details_print += part_details
+                order_details_print += "\n==========================\n"
+
+                self.get_logger().info(order_details_print)
+                
                 self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
 
                 data = self.ship_order.lock_move_agv(order)

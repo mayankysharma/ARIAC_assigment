@@ -100,7 +100,7 @@ class ShipOrders():
             # Retrieve the destination
             ship_destination = order.order_task.destination
 
-            self.agv_tray_locked(tray_num)
+            self.agv_tray_locked(agv_num)
             self.move_agv_to_station(agv_num, ship_destination)
             return (order.order_id, agv_num)
         except Exception as e:

@@ -9,7 +9,8 @@ from ariac_msgs.msg import (
     Part as PartMsg
 )
 from utils import(
-    Order
+    Order,
+    KittingTask
 )
 
 class ReadStoreOrders():
@@ -82,7 +83,7 @@ class ReadStoreOrders():
         self.order_topic1 = topic_name1
         self._orders = order_queue
         self.orders_subcriber = node.create_subscription(OrderMsg, self.order_topic1, self._orders_callback, 10, callback_group=callback_group)
-        self._parsing_Flag = True
+        self._parsing_Flag = False
         node.set_parameters([sim_time])
         # Subscriber to the logical camera topic
 
@@ -134,6 +135,45 @@ class ReadStoreOrders():
         if self._parsing_Flag:
             self.node.get_logger().info(self._parse_the_order(order))
    
+    def _parse_kitting_task(self, kitting_task: KittingTask):
+        '''
+        Parses a kitting task and returns a string representation.
+
+        Args:
+            kitting_task (KittingTask): The kitting task object.
+
+        Returns:
+            str: String representation of the kitting task.
+        '''
+        output = 'Type: Kitting\n'
+        output += '==========================\n'
+        output += f'AGV Number: {kitting_task.agv_number}\n'
+        output += f'Destination: {ReadStoreOrders._AGV_destinations[kitting_task.destination]}\n'
+        output += f'Tray ID: {kitting_task.tray_id}\n'
+        output += 'Products:\n'
+        output += '==========================\n'
+
+        quadrants = {1: "Quadrant 1: -",
+                     2: "Quadrant 2: -",
+                     3: "Quadrant 3: -",
+                     4: "Quadrant 4: -"}
+
+        for i in range(1, 5):
+            product: KittingPart
+            for product in kitting_task.parts:
+                if i == product.quadrant:
+                    _color_of_parts = ReadStoreOrders._color_of_parts[product.part.color].capitalize()
+                    _part_color_symbol = ReadStoreOrders._part_color_symbol[product.part.color]
+                    _type_of_parts = ReadStoreOrders._type_of_parts[product.part.type].capitalize()
+                    quadrants[i] = f'Quadrant {i}: {_part_color_symbol} {_color_of_parts} {_type_of_parts}'
+
+        output += f'\t{quadrants[1]}\n'
+        output += f'\t{quadrants[2]}\n'
+        output += f'\t{quadrants[3]}\n'
+        output += f'\t{quadrants[4]}\n'
+
+        return output
+    
     def _parse_the_order(self, order: Order):
         '''
         Parse an order message and return a string representation.
