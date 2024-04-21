@@ -37,7 +37,7 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-  ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa4_spring2024 sensor_name:=sensors.yaml
+   ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa4_spring2024 sensor_name:=sensors.yaml competitor_pkg:=rwa4_2
   ```
 
 
