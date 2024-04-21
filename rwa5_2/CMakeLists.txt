@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rwa4_2)
+project(rwa5_2)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -38,16 +38,16 @@ install(DIRECTORY
 )
 
 install(PROGRAMS
-  rwa4_2/comp_state.py
-  rwa4_2/ariac_interface_util.py
-  rwa4_2/ariac_interface_main.py
-  # rwa4_2/ariac_interface.py
-  rwa4_2/custom_timer.py
-  rwa4_2/read_store_orders.py
-  rwa4_2/ship_orders.py
-  rwa4_2/submit_orders.py
-  rwa4_2/utils.py
-  rwa4_2/sensor_read.py
+  rwa5_2/comp_state.py
+  rwa5_2/ariac_interface_util.py
+  rwa5_2/ariac_interface_main.py
+  # rwa5_2/ariac_interface.py
+  rwa5_2/custom_timer.py
+  rwa5_2/read_store_orders.py
+  rwa5_2/ship_orders.py
+  rwa5_2/submit_orders.py
+  rwa5_2/utils.py
+  rwa5_2/sensor_read.py
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
