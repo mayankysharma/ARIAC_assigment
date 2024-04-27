@@ -41,7 +41,7 @@ install(PROGRAMS
   rwa5_2/comp_state.py
   rwa5_2/ariac_interface_util.py
   rwa5_2/ariac_interface_main.py
-  # rwa5_2/ariac_interface.py
+  rwa5_2/process_order.py
   rwa5_2/custom_timer.py
   rwa5_2/read_store_orders.py
   rwa5_2/ship_orders.py
