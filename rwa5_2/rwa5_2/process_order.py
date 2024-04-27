@@ -1,6 +1,12 @@
 
 from collections import deque
 import numpy as np
+import rclpy
+
+from geometry_msgs.msg import Pose
+from tf2_ros.transform_listener import TransformListener
+from tf2_ros.buffer import Buffer
+from tf2_ros import TransformException
 
 FixQuadrantPositionsRelativeTray = {
     1 : np.array([-0.13, -0.08, 0]),
@@ -30,6 +36,8 @@ class ProcessOrder():
         self._tray_info = None # {} dictonary containing id, pose, agv_num, "pick" true or not details
 
         self._recievedOrder = False
+
+
         pass
     
     @property
@@ -49,12 +57,26 @@ class ProcessOrder():
             1. tray_info, name, pick position
             2. parts_info : [name,quadrant,pick position]
         """
+
+        self._parts_info = {}
+        self._tray_info = {}
+
+        # get part info
         if len(parts_info) > 0:
-            self._parts_info = deque(parts_info)
-        self._tray_info = tray_info
-        
+            self._parts_info["parts_info"] = deque(parts_info)
+            loc = self.get_grip_changer_pose("parts",parts_info[0]["kts"])
+            if loc is None:
+                raise Exception("Issue with the gripper change station location")
+            self._parts_info["grip_changer_pose"] = loc
+
+        # get tray info
+        loc = self.get_grip_changer_pose("trays",tray_info["kts"])
+        if loc is None:
+            raise Exception("Issue with the gripper change station location")
+        self._tray_info = tray_info.update({"grip_changer_pose" : loc})
+        self.node.get_logger().info(f"Tray Info : {self._tray_info}")
         self._recievedOrder = True
-        
+        return True
 
     def get_pick_place_position(self):
         """
@@ -85,4 +107,43 @@ class ProcessOrder():
         """
 
         return True
+
+    def get_grip_changer_pose(self, gripper_type, kts) -> Pose:
+        """
+        This Function get the pose of the gripper change station, so that robot can move there and change
+        there according to task (defined as gripper type)
+        Args:
+            gripper_type : trays or parts
+            kts: 1 or 2
+        Return:
+            pose: of the location.
+        """
+        t = None
+        count = 0
+        # while t is None and count<10:
+        to_frame_rel = "world"
+        from_frame_rel = f"kts{kts}_tool_changer_{gripper_type}_frame"
+        gripper_changer_pose = Pose()
+        try:
+            t = self.node.tf_buffer.lookup_transform(
+                to_frame_rel,  # referred to world coordinate
+                from_frame_rel, # example changing the gripper tool from kts1 station
+                rclpy.time.Time())
+            (gripper_changer_pose.position.x, gripper_changer_pose.position.y, gripper_changer_pose.position.z) = (t.transform.translation.x,
+                                                                                                                        t.transform.translation.y,
+                                                                                                                            t.transform.translation.z) 
+            gripper_changer_pose.orientation.x = t.transform.translation.x
+            gripper_changer_pose.orientation.y = t.transform.translation.y
+            gripper_changer_pose.orientation.z = t.transform.rotation.z
+            gripper_changer_pose.orientation.w = t.transform.rotation.w
+
+        except TransformException as ex:
+            self.node.get_logger().error(
+                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+                # return None
+            # count+=1
+        if t is None:
+            return None
+        return gripper_changer_pose
+
 

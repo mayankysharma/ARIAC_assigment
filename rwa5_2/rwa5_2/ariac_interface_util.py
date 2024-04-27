@@ -9,6 +9,8 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from geometry_msgs.msg import Pose
+from tf2_ros.transform_listener import TransformListener
+from tf2_ros.buffer import Buffer
 
 # from ship_orders import ShipOrders
 from custom_timer import CustomTimer
@@ -67,7 +69,9 @@ class AriacInterface(Node):
         self.current_order = None
         self.pending_order = None
 
-        #
+        # Transform listener to get the pose of some frames not predefined
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
     def monitor_state_callback(self):
         """
@@ -91,18 +95,22 @@ class AriacInterface(Node):
 
         if self.current_order is not None:
             order, process_order, curr_priority = self.current_order
-            try:
 
-                if not process_order.recievedOrder:
-                    tray_info, parts_info = self.get_info_from_sensor(order)
+            if not process_order.recievedOrder:
+                # if not recieved the order details from sensor, then fetch it.
+                try:
+                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=True)
                     process_order.getOrder(tray_info=tray_info, parts_info=parts_info)
-
-                    self.get_logger().info(order_details_print)
-
-                if not process_order.isOrderProcessed:
-                    process_order.get_pick_place_position()
-                      
-                else:              
+                except Exception as e:
+                    self.get_logger().error(f"PROBLEM WITH THE GETING THE PARTS AND TRAY INFO FROM ENVIRONMENT!!!! \n {e}")
+                    
+            if not process_order.isOrderProcessed:
+                # Start processing the order
+                process_order.get_pick_place_position()
+                    
+            else:              
+                try:
+                    # Start shipping and submitting the order
                     self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
 
                     data = self.ship_order.lock_move_agv(order)
@@ -114,8 +122,8 @@ class AriacInterface(Node):
                     if self.pending_order is not None:
                         self.current_order_priority = self.pending_order[2]
                     self.pending_order = None
-            except Exception as e:
-                self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
+                except Exception as e:
+                    self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
         else:
             if self.comp_state.all_orders_recieved:
                 self.comp_state.competition_ended = True
@@ -207,6 +215,7 @@ class AriacInterface(Node):
                                     "pose" : pose,
                                     "agv_num" : order.order_task.agv_number,
                                     "pick" : True,
+                                    "kts" : 2 if order.order_task.agv_number<3 else 1 # Reason being agv1 and 2 are near to kts2
                                 }
                             )
 
@@ -226,7 +235,8 @@ class AriacInterface(Node):
                             "id" : order.order_task.tray_id,
                             "pose" : pose,
                             "agv_num" : order.order_task.agv_number,
-                            "pick" : True
+                            "pick" : True,
+                            "kts" : 1 if "kts1" in sensor_name else 2
                         }
 
 
@@ -241,9 +251,10 @@ class AriacInterface(Node):
             - {order.order_id}
                 - Kitting Tray"""
             # print(parts)
-            for tray_id, tray_info in print_tray.items():
-                order_details_print += tray_info
+            for tray_id, ptray_info in print_tray.items():
+                order_details_print += ptray_info
             for part_, part_details in print_parts.items():
                 order_details_print += part_details
             order_details_print += "\n==========================\n"
+            self.get_logger().info(order_details_print)
         return tray_info, parts_info
