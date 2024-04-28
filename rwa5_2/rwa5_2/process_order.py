@@ -3,6 +3,7 @@ from collections import deque
 import numpy as np
 import rclpy
 
+from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
@@ -15,12 +16,12 @@ FixQuadrantPositionsRelativeTray = {
     4 : np.array([0.13, 0.08, 0]),
 }
 
-FixAGVPosition = {
-    1 : np.array([0.4,0,0]),
-    2 : np.array([0.4,0,0]),
-    3 : np.array([0.4,0,0]),
-    4 : np.array([0.4,0,0])
-}
+# FixAGVPosition = {
+#     1 : np.array([0.4,0,0]),
+#     2 : np.array([0.4,0,0]),
+#     3 : np.array([0.4,0,0]),
+#     4 : np.array([0.4,0,0])
+# }
 
 class ProcessOrder():
     def __init__(self, order_id, node):
@@ -71,7 +72,6 @@ class ProcessOrder():
                 raise Exception("Issue with the agv tray location")
             self._parts_info["agv_tray_pose"] = agv_tray_loc
 
-
         # get tray info
         gripper_loc = self.get_grip_changer_pose("trays",tray_info["kts"])
         if gripper_loc is None:
@@ -93,9 +93,27 @@ class ProcessOrder():
         """
         if self._tray_info is not None:
             # pick and place tray call service here
+            # pick_p = 1
+            # if self._tray_info["pick"]:
+            #     future = service.call(self._tray_info["pose"],pick)
+            #      future.add_response_callback()   
+            #      self._tray_info["pick"] = False
+            # else:
+            #     service.call(self._tray_info["agv_tray_pose"], place)
+            #     self._tray_info = None
             pass
         elif self._parts_info is not None:
-            # pick and place part call service here
+            # # pick and place part call service here
+            # part_info = self._parts_info["parts_info"].popleft()
+            # complete = False
+            # if part_info["pick"]:
+            #     service.call(self._tray_info["pose"],pick)
+            #     part_info["pick"] = False
+            # else:
+            #     # place_pose compute relative agv_tray to quadrant
+            #     # service.call()
+            #     completed = True
+            # self._parts_info["parts_info"].appendleft(part_info)
             pass
         
         return
@@ -114,7 +132,16 @@ class ProcessOrder():
         """
         Pause the process, service call to moveit, to pause
         """
-
+        # Build the request
+        request = Trigger.Request()
+        response = self.pause_service.call(request)
+        # Check the result of the service call.
+        if response.success:
+            self.node.get_logger().info(f'Successfully Paused the robot for order id {self._order_id}')
+        else:
+            self.node.get_logger().warn(response.message)
+            raise Exception("Unable to Pause") 
+            
         return True
 
     def get_grip_changer_pose(self, gripper_type, kts) -> Pose:

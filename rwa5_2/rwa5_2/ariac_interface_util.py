@@ -3,7 +3,6 @@ import time
 from collections import deque
 from copy import deepcopy
 
-
 from rclpy.node import Node
 import rclpy 
 from rclpy.executors import MultiThreadedExecutor
@@ -26,6 +25,7 @@ from ariac_msgs.msg import (
     Part as PartMsg,
     PartPose as PartPoseMsg,
 )
+from std_srvs.srv import Trigger
 
 from process_order import ProcessOrder
 from sensor_read import SensorRead
@@ -42,7 +42,8 @@ class AriacInterface(Node):
     comp_state_topic_name = "/ariac/competition_state"
     submit_order_service_name = "/ariac/submit_order"
 
-    agv_number_topic_name = "/ariac/agv{}_status"
+    pause_service_name = "/robot/pause"
+    resume_service_name = "/robot/resume"
 
     def __init__(self, node_name):
         """
@@ -65,6 +66,16 @@ class AriacInterface(Node):
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
         self.sensor_read=SensorRead(self,callback_group=group_reentrant1)
         
+        # pause service use for the pausing the robot when recived high priority order
+        self.pause_service = self.create_client(Trigger,
+                                                AriacInterface.pause_service_name,
+                                                callback_group=group_reentrant1)
+
+        # Resume service for the previous order
+        self.resume_service = self.create_client(Trigger,
+                                                AriacInterface.resume_service_name,
+                                                callback_group=group_reentrant1)
+
         self.current_order_priority = False
         self.current_order = None
         self.pending_order = None
@@ -130,7 +141,6 @@ class AriacInterface(Node):
             if self.comp_state.all_orders_recieved:
                 self.comp_state.competition_ended = True
 
-        # self.custom_timer.reset_flags()
 
     def update_order(self, order):
         """
@@ -140,14 +150,18 @@ class AriacInterface(Node):
             order: order class contain info of all order details
         """
         if order.order_priority and not self.current_order_priority:
+
+            if self.current_order is not None:
+                # pausing the current processing of the order if there is any.
+                try:
+                    self.current_order[1].pause()
+                except Exception as e:
+                    self.get_logger().fatal(f"Wait for Previous Order to complete causing error {e}")
+                    self.order_queue.appendleft(order)
+            
             self.current_order_priority = order.order_priority
             self.pending_order = self.current_order
 
-            if self.pending_order is not None:
-                # pausing the current processing of the order if there is any.
-                self.pending_order[1].pause()
-
-            # self.get_logger().info(f"Keeping the {self.pending_order[0].order_id} to pending!!")
             self.current_order = (order, ProcessOrder(order_id=order.order_id,node=self), order.order_priority)
             self.get_logger().info(f"Got the High Priority Order!! Changing to it of id {self.current_order[0].order_id}!!")
 
