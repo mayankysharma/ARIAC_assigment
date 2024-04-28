@@ -37,8 +37,6 @@ class ProcessOrder():
 
         self._recievedOrder = False
 
-
-        pass
     
     @property
     def recievedOrder(self):
@@ -64,17 +62,28 @@ class ProcessOrder():
         # get part info
         if len(parts_info) > 0:
             self._parts_info["parts_info"] = deque(parts_info)
-            loc = self.get_grip_changer_pose("parts",parts_info[0]["kts"])
-            if loc is None:
+            gripper_loc = self.get_grip_changer_pose("parts",parts_info[0]["kts"])
+            if gripper_loc is None:
                 raise Exception("Issue with the gripper change station location")
-            self._parts_info["grip_changer_pose"] = loc
+            self._parts_info["grip_changer_pose"] = gripper_loc
+            agv_tray_loc = self.get_grip_changer_pose("parts",parts_info[0]["agv_num"])
+            if agv_tray_loc is None:
+                raise Exception("Issue with the agv tray location")
+            self._parts_info["agv_tray_pose"] = agv_tray_loc
+
 
         # get tray info
-        loc = self.get_grip_changer_pose("trays",tray_info["kts"])
-        if loc is None:
+        gripper_loc = self.get_grip_changer_pose("trays",tray_info["kts"])
+        if gripper_loc is None:
             raise Exception("Issue with the gripper change station location")
-        self._tray_info = tray_info.update({"grip_changer_pose" : loc})
-        self.node.get_logger().info(f"Tray Info : {self._tray_info}")
+        tray_info.update({"gripper_change_pose" : gripper_loc})
+
+        agv_tray_loc = self.get_grip_changer_pose("trays",tray_info["agv_num"])
+        if agv_tray_loc is None:
+            raise Exception("Issue with the agv tray location")
+        tray_info.update({"agv_tray_pose" : agv_tray_loc})
+
+        self._tray_info = tray_info
         self._recievedOrder = True
         return True
 
@@ -122,13 +131,16 @@ class ProcessOrder():
         count = 0
         # while t is None and count<10:
         to_frame_rel = "world"
-        from_frame_rel = f"kts{kts}_tool_changer_{gripper_type}_frame"
+        # from_frame_rel = "kts1_tool_changer_parts_frame" 
+        from_frame_rel =  f"kts{kts}_tool_changer_{gripper_type}_frame"
         gripper_changer_pose = Pose()
+        # self.node.get_logger().info(f"pose : {gripper_changer_pose}")
         try:
             t = self.node.tf_buffer.lookup_transform(
                 to_frame_rel,  # referred to world coordinate
                 from_frame_rel, # example changing the gripper tool from kts1 station
                 rclpy.time.Time())
+            # self.node.get_logger().info(f"transform : {t}")
             (gripper_changer_pose.position.x, gripper_changer_pose.position.y, gripper_changer_pose.position.z) = (t.transform.translation.x,
                                                                                                                         t.transform.translation.y,
                                                                                                                             t.transform.translation.z) 
@@ -136,14 +148,54 @@ class ProcessOrder():
             gripper_changer_pose.orientation.y = t.transform.translation.y
             gripper_changer_pose.orientation.z = t.transform.rotation.z
             gripper_changer_pose.orientation.w = t.transform.rotation.w
+            # self.node.get_logger().info(f"gripper pose : {gripper_changer_pose}")
 
         except TransformException as ex:
             self.node.get_logger().error(
                 f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
-                # return None
-            # count+=1
-        if t is None:
             return None
+            # count+=1
+        # if t is None:
+        #     return None
         return gripper_changer_pose
 
+    def get_agv_tray_pose(self, agv_num) -> Pose:
+        """
+        This Function get the pose of the agv tray pose to place the tray on agv.
+        Args:
+            agv_num: b/w [1,2,3,4]
+        Return:
+            pose: agv tray pose.
+        """
+        t = None
+        count = 0
+        # while t is None and count<10:
+        to_frame_rel = "world"
+        from_frame_rel =  f"agv{agv_num}_tray"
+
+        agv_tray_pose = Pose()
+        # self.node.get_logger().info(f"pose :  agv_tray_pose}")
+        try:
+            t = self.node.tf_buffer.lookup_transform(
+                to_frame_rel,  # referred to world coordinate
+                from_frame_rel, # example changing the gripper tool from kts1 station
+                rclpy.time.Time())
+            # self.node.get_logger().info(f"transform : {t}")
+            (agv_tray_pose.position.x,   agv_tray_pose.position.y,  agv_tray_pose.position.z) = (t.transform.translation.x,
+                                                                                                                        t.transform.translation.y,
+                                                                                                                            t.transform.translation.z) 
+            agv_tray_pose.orientation.x = t.transform.translation.x
+            agv_tray_pose.orientation.y = t.transform.translation.y
+            agv_tray_pose.orientation.z = t.transform.rotation.z
+            agv_tray_pose.orientation.w = t.transform.rotation.w
+            # self.node.get_logger().info(f"gripper pose :  agv_tray_pose}")
+
+        except TransformException as ex:
+            self.node.get_logger().error(
+                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+            return None
+            # count+=1
+        # if t is None:
+        #     return None
+        return  agv_tray_pose
 

@@ -99,7 +99,9 @@ class AriacInterface(Node):
             if not process_order.recievedOrder:
                 # if not recieved the order details from sensor, then fetch it.
                 try:
-                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=True)
+                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=False)
+                    # self.get_logger().info(f"tray info from sensor : {tray_info}")
+                    # self.get_logger().info(f"part info from sensor : {parts_info}")
                     process_order.getOrder(tray_info=tray_info, parts_info=parts_info)
                 except Exception as e:
                     self.get_logger().error(f"PROBLEM WITH THE GETING THE PARTS AND TRAY INFO FROM ENVIRONMENT!!!! \n {e}")
@@ -240,6 +242,7 @@ class AriacInterface(Node):
                         }
 
 
+                        ## Prints
                         print_tray["tray_id"] = f"""
                 - ID : {order.order_task.tray_id}
                 - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
