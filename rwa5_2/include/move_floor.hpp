@@ -7,7 +7,7 @@
 class FloorRobotNode : public rclcpp::Node {
 public:
     FloorRobotNode();
-   
+
 private:
     moveit::planning_interface::MoveGroupInterface floor_robot_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
@@ -17,3 +17,4 @@ private:
         std_srvs::srv::Trigger::Response::SharedPtr response
     );
 };
+
