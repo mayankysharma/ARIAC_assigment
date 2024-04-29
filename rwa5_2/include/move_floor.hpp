@@ -19,7 +19,6 @@ private:
     moveit::planning_interface::MoveGroupInterface floor_robot_;
 
 rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
-rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr enable_gripper_service_;
 ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
 // Subscriber
 rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
@@ -28,15 +27,24 @@ rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_sta
 void floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripperState::SharedPtr msg);
 
 // Service clients
-rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr move_robot_client_;
-rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr enable_gripper_client_;
+rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr change_gripper_tool_client_;
+rclcpp::Client<ariac_msgs::srv::VacuumGripperControl>::SharedPtr enable_gripper_client_;
 
 // Callback function for move robot service
 void moveRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
                        std_srvs::srv::Trigger::Response::SharedPtr response);
 
 
-void enableGripperService(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                       std_srvs::srv::Trigger::Response::SharedPtr response);
+/**
+ * @brief Using the service enable the gripper 
+ * service : "/ariac/floor_robot_enable_gripper"
+ */
+bool changeGripperState(bool request);
+
+/**
+ * @brief Change the gripper tool given from gripper client
+ * service : "/ariac/floor_robot_change_gripper"
+ */
+bool changeGripperTool(uint8_t request);
 
 };

@@ -1,7 +1,9 @@
-#include "move_floor.hpp"
+
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include<utils.hpp>
+
+#include "utils.hpp"
+#include "move_floor.hpp"
 
 FloorRobotNode::FloorRobotNode()
     : Node("floor_robot"),
@@ -19,20 +21,12 @@ FloorRobotNode::FloorRobotNode()
         "/move_floor_robot",
         std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-    enable_gripper_service_ = create_service<std_srvs::srv::Trigger>(
-        "/ariac/floor_robot_enable_gripper",
-        std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
-
-    // Create service clients
-    // auto service_client_options = rclcpp::NodeOptions().also({rclcpp::CallbackGroup::Pointer(service_callback_group)});
-    // move_robot_client_ = create_client<std_srvs::srv::Trigger>("/move_floor_robot", service_client_options);
-    // enable_gripper_client_ = create_client<std_srvs::srv::Trigger>("/ariac/floor_robot_enable_gripper", service_client_options);
-
+    enable_gripper_client_ = this->create_client<ariac_msgs::srv::VacuumGripperControl>("/ariac/floor_robot_enable_gripper");
+    change_gripper_tool_client_ = this->create_client<ariac_msgs::srv::ChangeGripper>("/ariac/floor_robot_change_gripper");
+    
     // Create a SubscriptionOptions object
     auto subscription_options = rclcpp::SubscriptionOptions();
     subscription_options.callback_group = subscription_callback_group;
-
-    
 
     gripper_state_sub_ = this->create_subscription<ariac_msgs::msg::VacuumGripperState>(
         "/ariac/floor_robot_gripper_state",10,
@@ -79,6 +73,7 @@ void FloorRobotNode::moveRobotCallback(
         {
             response->success = true;
             response->message = "Robot moved successfully";
+            changeGripperState(1);
         }
         else
         {
@@ -104,6 +99,39 @@ void FloorRobotNode::floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripper
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Object attached: %s", msg->attached ? "true" : "false");
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Gripper type: %s", msg->type.c_str());
 }
+
+
+bool FloorRobotNode::changeGripperState(bool request_en){
+    auto request = std::make_shared<ariac_msgs::srv::VacuumGripperControl::Request>();
+
+    request->enable = request_en;
+    auto result_future = enable_gripper_client_->async_send_request(request);
+    auto response = result_future.get();
+
+    if (response->success){
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully Enabled Gripper");
+        return true;
+    }
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Not change the state of the gripper");
+    return false;
+}
+
+
+bool FloorRobotNode::changeGripperTool(uint8_t gripper_type){
+    auto request = std::make_shared<ariac_msgs::srv::ChangeGripper::Request>();
+
+    request->gripper_type = gripper_type; //ariac_msgs::srv::ChangeGripper::Request::PART_GRIPPER;
+    auto result_future = change_gripper_tool_client_->async_send_request(request);
+    auto response = result_future.get();
+
+    if (response->success){
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully Change Gripper");
+        return true;
+    }
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Error : %s",response->message.c_str());
+    return false;
+}
+
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
@@ -114,3 +142,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
