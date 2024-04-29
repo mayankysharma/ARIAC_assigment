@@ -124,8 +124,6 @@ class AriacInterface(Node):
                     self.get_logger().error(f"PROBLEM WITH THE GETING THE PARTS AND TRAY INFO FROM ENVIRONMENT!!!! \n {e}")
                     
             if not process_order.isOrderProcessed:
-                self.get_logger().info(f"Processing the order {order.order_id}!!")
-
                 # Start processing the order
                 process_order.get_pick_place_position()
                     
@@ -166,6 +164,7 @@ class AriacInterface(Node):
                 except Exception as e:
                     self.get_logger().fatal(f"Wait for Previous Order to complete causing error {e}")
                     self.order_queue.appendleft(order)
+                    return
             
             self.current_order_priority = order.order_priority
             self.pending_order = self.current_order

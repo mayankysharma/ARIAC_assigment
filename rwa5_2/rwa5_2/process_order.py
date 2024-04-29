@@ -52,6 +52,9 @@ class ProcessOrder():
         ## check if any order part in process
         self.current_order= False
     
+        # Check if the order is finish
+        self.order_type = "pick"
+
     @property
     def recievedOrder(self):
         """
@@ -156,10 +159,13 @@ class ProcessOrder():
         """
         try:
             if not self.current_order:
+                self.node.get_logger().info(f"Processing the order {self._order_id}!!")
                 self.current_order = True
                 order_pick, order_place = self._order.popleft()
                 if order_pick is None:
                     current_order = order_place #self._order.popleft()[1]
+                    # self.finish_1_order = False
+                    self.order_type="place"
                 else:
                     current_order = order_pick
                     self._order.appendleft((None,order_place))
@@ -186,21 +192,32 @@ class ProcessOrder():
             result = future.result()
             # Check if the result is successful
             if result.success:
-                print("Service call successful:", result.message)
+                self.node.get_logger().info(f"Service call successful:{result.message}")
                 # Handle success scenario here
+
             else:
-                print("Service call failed:", result.message)
+                self.node.get_logger().error(f"Service call failed: {result.message}")
 
                 ## Regain the info for use when the order process resumes
                 if info.pick_place==PickPlace.Request().PICK:
                     pick_o,place_o = self._order.popleft()
                     self._order.appendleft((pick_o,place_o))
+
                 else:
                     self._order.appendleft((None,info))
+
             
                 # Handle failure scenario here
         else:
-            print("Future was cancelled or did not complete successfully.")
+            self.node.get_logger().error(f"Future was cancelled or did not complete successfully")
+            ## Regain the info for use when the order process resumes
+            if info.pick_place==PickPlace.Request().PICK:
+                pick_o,place_o = self._order.popleft()
+                self._order.appendleft((pick_o,place_o))
+
+            else:
+                self._order.appendleft((None,info))
+
         self._place = False
         self.current_order= False
 
@@ -216,19 +233,31 @@ class ProcessOrder():
         """
         Pause the process, service call to moveit, to pause
         """
-        while self._place:
-            # if robot in place motion then wait till it complete
-            continue
-        
-        # Build the request
-        request = Trigger.Request()
-        response = self.pause_service.call_async(request)
-        # Check the result of the service call.
-        if response.success:
-            self.node.get_logger().info(f'Successfully Paused the robot for order id {self._order_id}')
-        else:
-            self.node.get_logger().warn(response.message)
-            raise Exception("Unable to Pause") 
+        try:
+            self.node.get_logger().info("Pausing the order.")
+            if self.order_type=="pick":
+                self.node.get_logger().info("Currently picking the order")
+                while self.current_order:
+                    continue
+                self.node.get_logger().info("Start placing the Order.")
+                self.get_pick_place_position()
+
+            while self.current_order and self.order_type=="place":
+                continue
+            self.node.get_logger().info("Completed 1 order. Now pausing!!")
+        except Exception as e:
+            self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
+            return False
+
+        # # Build the request
+        # request = Trigger.Request()
+        # response = self.pause_service.call_async(request)
+        # # Check the result of the service call.
+        # if response.success:
+        #     self.node.get_logger().info(f'Successfully Paused the robot for order id {self._order_id}')
+        # else:
+        #     self.node.get_logger().warn(response.message)
+        #     raise Exception("Unable to Pause") 
             
         return True
 

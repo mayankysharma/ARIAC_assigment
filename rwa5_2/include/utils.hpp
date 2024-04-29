@@ -10,10 +10,10 @@
 
 namespace utils{
     std::map<std::string, float> OFFSETS{
-        {"tray", 0.1},
+        {"tray", 0.2},
         {"drop", 0.002},
         {"pick", 0.003},
-        {"part", 0.4},
+        {"part", 0.2},
     };
         
     std::map<int, double> PART_HEIGHTS
