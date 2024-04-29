@@ -21,31 +21,14 @@ cd ariac_ws/
   ```
 * Run in the chronology
   - First terminal
-  ```
-  source install/setup.bash
-  ```
   ```bash
   ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa5_spring2024
   ```
-  
-
-  - Second terminal
-  Start the competition
+  - Second terminal : launch custom moveit planner 
   ```
-  source install/setup.bash
+  ros2 launch rwa5_2 mov_launch.py
   ```
-```
-ros2 service call /ariac/start_competition std_srvs/srv/Trigger
-```
-- Launch Moveit
-
+- Launch ariac interface pipeline rwa5
   ```
-   ros2 launch rwa5_2 mov_launch.py 
-
+   ros2 launch rwa5_2 ariac_interface.launch.py  
   ```
-- Trigger the move service
-```
-ros2 service call /move_floor_robot std_srvs/srv/Trigger
-```
-
-
