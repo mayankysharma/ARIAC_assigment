@@ -88,7 +88,7 @@ void FloorRobotNode::moveRobotCallback(
     std::vector<geometry_msgs::msg::Pose> waypoints;
 
     float offset = 0.0;
-    if (request->part_type!=-1)
+    if (request->part_type!="")
         offset = utils::OFFSETS["part"] + utils::PART_HEIGHTS[request->part_type];
     else
     {
@@ -107,6 +107,7 @@ void FloorRobotNode::moveRobotCallback(
     double pitch = 0.00;   // Pitch angle in radians
     double yaw = 1.57;    // Yaw angle in radians
 
+    tf2::Quaternion orientation;
     orientation.setRPY(roll, pitch, yaw);
 
     // Set the orientation
@@ -132,24 +133,28 @@ void FloorRobotNode::moveRobotCallback(
             
             response->message = "Robot moved successfully";
 
-
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Robot move successful");
             _enable_gripper_service_started = true;
-            auto request_vacuum_gripper = std::make_shared<VacuumGripperControlSrv::Request>();
+            // auto request_vacuum_gripper = std::make_shared<VacuumGripperControlSrv::Request>();
             if (request->pick_place==PickPlaceSrv::Request::PICK){
+                  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service Requested for Change Gripper state, enabling.");
                   changeGripperState(true);
+                  RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Change Gripper state to enabled");
                   geometry_msgs::msg::Pose object_pose = request->destination_pose;
                   std::string object_file = ""; 
                   std::string object_name = "";
                   if (request->tray_id==-1){
                     object_name = request->part_color + std::string("_") + request->part_type;
-                  }
+                    object_file = request->part_type + ".stl";
+                    }
                   else{
-                    
-                  }
+                    object_name = "kit_tray_" + request->tray_id;
+                    object_file = "kit_tray.stl";
+                    }
+                    RCLCPP_INFO(get_logger(), "object_name : %s, object_file : %s",object_name.c_str(),object_file.c_str());
                     add_single_model_to_planning_scene( object_name, object_file, object_pose);
                     floor_robot_.attachObject(object_name);
                   }
-             }
              else {
                 changeGripperState(false);
                 // Drop object
@@ -161,9 +166,8 @@ void FloorRobotNode::moveRobotCallback(
 //             if (request->tray_id==-1) request_change_gripper->gripper_type = ChangeGripperSrv::Request::PART_GRIPPER; //ariac_msg s::srv::ChangeGripper::Request::PART_GRIPPER;
 //             else request_change_gripper->gripper_type = ChangeGripperSrv::Request::TRAY_GRIPPER;
 //             change_gripper_tool_client_->async_send_request(request_change_gripper,std::bind(&FloorRobotNode::changeGripperTool, this, std::placeholders::_1));            
-//             while (_change_gripper_tool_service_started ){continue;}
-        }   
-
+//             while (_change_gripper_tool_service_started ){continue;  
+        }
         else
         {
             response->success = false;
@@ -249,7 +253,7 @@ bool FloorRobotNode::changeGripperState(bool enable){
 bool FloorRobotNode::changeGripperTool(uint8_t gripper_type){
     auto request = std::make_shared<ChangeGripperSrv::Request>();
 
-
+    auto future = change_gripper_tool_client_->async_send_request(request);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to get response");
     // result_future.wait();
     auto response = future.get();

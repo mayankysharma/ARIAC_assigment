@@ -23,6 +23,13 @@ namespace utils{
         {"pick", 0.003},
         {"part", 0.070},
     };
+
+            
+    std::map<std::string, double> PART_HEIGHTS
+        = { { "battery", 0.04 },
+            { "pump", 0.12 },
+            { "regulator", 0.07 },
+            { "sensor",0.07}};
     
 }
 class Utils
@@ -177,12 +184,4 @@ public:
     }
 };
 
-        
-    std::map<int, double> PART_HEIGHTS
-        = { { ariac_msgs::msg::Part::BATTERY, 0.04 },
-            { ariac_msgs::msg::Part::PUMP, 0.12 },
-            { ariac_msgs::msg::Part::REGULATOR, 0.07 },
-            { ariac_msgs::msg::Part::SENSOR,0.07}};
-    // enum PICKPLACE()
-}
 

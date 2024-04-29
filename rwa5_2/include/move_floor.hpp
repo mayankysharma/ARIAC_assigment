@@ -58,25 +58,33 @@ private:
   */
     trajectory_processing::TimeOptimalTrajectoryGeneration totg_;
 
-rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
-ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
-// Subscriber
-rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
-rclcpp::Subscription<std_msgs::msg::String>::SharedPtr go_home_sub_;
-//Callback group for gripper
-rclcpp::CallbackGroup::SharedPtr gripper_cbg_;
+    // Subscriber
+    rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr go_home_sub_;
+    //Callback group for gripper
+    rclcpp::CallbackGroup::SharedPtr gripper_cbg_;
 
-void floor_robot_sub_cb(const std_msgs::msg::String::ConstSharedPtr msg);
-// Callback function for gripper state subscriber
-void floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripperState::SharedPtr msg);
 
-// Service clients
-rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr change_gripper_tool_client_;
-rclcpp::Client<ariac_msgs::srv::VacuumGripperControl>::SharedPtr enable_gripper_client_;
-  //! Client for "/ariac/perform_quality_check" service
-rclcpp::Client<ariac_msgs::srv::PerformQualityCheck>::SharedPtr quality_checker_;
-//! Client for "/ariac/floor_robot_change_gripper" service
-  rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr floor_robot_tool_changer_;
+    // Service clients
+    rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr change_gripper_tool_client_;
+    rclcpp::Client<ariac_msgs::srv::VacuumGripperControl>::SharedPtr enable_gripper_client_;
+    //! Client for "/ariac/perform_quality_check" service
+    rclcpp::Client<ariac_msgs::srv::PerformQualityCheck>::SharedPtr quality_checker_;
+    //! Client for "/ariac/floor_robot_change_gripper" service
+    rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr floor_robot_tool_changer_;
+
+
+
+    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
+    ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr pause_robot_service_;
+    rclcpp::Service<rwa5_2::srv::PickPlace>::SharedPtr move_robot_service_;
+    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_robot_service_;
+
+
+
+    void floor_robot_sub_cb(const std_msgs::msg::String::ConstSharedPtr msg);
+    // Callback function for gripper state subscriber
 
 
     // Callback function for move robot service
@@ -119,76 +127,60 @@ rclcpp::Client<ariac_msgs::srv::PerformQualityCheck>::SharedPtr quality_checker_
 //     bool changeGripperTool(rclcpp::Client<ChangeGripperSrv>::SharedFuture future);
 
 
-    moveit::planning_interface::MoveGroupInterface floor_robot_;
+    bool move_to_target ();
+    /**
+     * @brief Using the service enable the gripper 
+     * service : "/ariac/floor_robot_enable_gripper"
+     */
+    bool changeGripperState(bool request);
+
+    /**
+     * @brief Change the gripper tool given from gripper client
+     * service : "/ariac/floor_robot_change_gripper"
+     */
+    bool changeGripperTool(uint8_t request);
+    /**
+     * move_through_waypoints function
+     * @brief movve through waypoints
+     *  @param waypoints  Waypoints to move through
+     * @param vsf  Velocity scale factor
+     * @param asf  Acceleration scale factor
+     * @return true  Successfully moved through the waypoints
+     * @return false  Failed to move through the waypoints
+    */
+    bool move_through_waypoints (std::vector<geometry_msgs::msg::Pose> waypoints,
+                                double vsf, double asf);
+    /**
+     * @brief  Move the robot to its home pose
+     *
+     * @return true Motion successful
+     * @return false Motion failed
+     */
 
 
-    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
-    ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr pause_robot_service_;
-    rclcpp::Service<rwa5_2::srv::PickPlace>::SharedPtr move_robot_service_;
-    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_robot_service_;
+    /**
+     * @brief Add a single model to the planning scene
+     *
+     * @param name  Name of the model
+     * @param mesh_file  Mesh file of the model
+     * @param model_pose  Pose of the model
+     */
+    void
+    add_single_model_to_planning_scene (std::string name, std::string mesh_file,
+                                        geometry_msgs::msg::Pose model_pose);
+    //-----------------------------//
+    /**
+     * @brief Add static models to the planning scene
+     *
+     * Static models include the bins, tray tables, assembly stations, assembly
+     * inserts, and the conveyor belt
+     *
+     */
 
+    void add_models_to_planning_scene ();
+    //-----------------------------//
+    void wait_for_attach_completion (double timeout);
 
-bool move_to_target ();
-/**
- * @brief Using the service enable the gripper 
- * service : "/ariac/floor_robot_enable_gripper"
- */
-bool changeGripperState(bool request);
-
-/**
- * @brief Change the gripper tool given from gripper client
- * service : "/ariac/floor_robot_change_gripper"
- */
-bool changeGripperTool(uint8_t request);
-/**
- * move_through_waypoints function
- * @brief movve through waypoints
- *  @param waypoints  Waypoints to move through
-   * @param vsf  Velocity scale factor
-   * @param asf  Acceleration scale factor
-   * @return true  Successfully moved through the waypoints
-   * @return false  Failed to move through the waypoints
-*/
-bool move_through_waypoints (std::vector<geometry_msgs::msg::Pose> waypoints,
-                               double vsf, double asf);
-/**
- * @brief  Move the robot to its home pose
- *
- * @return true Motion successful
- * @return false Motion failed
- */
-
-
-/**
-   * @brief Add a single model to the planning scene
-   *
-   * @param name  Name of the model
-   * @param mesh_file  Mesh file of the model
-   * @param model_pose  Pose of the model
-   */
-  void
-  add_single_model_to_planning_scene (std::string name, std::string mesh_file,
-                                      geometry_msgs::msg::Pose model_pose);
-  //-----------------------------//
-/**
-   * @brief Add static models to the planning scene
-   *
-   * Static models include the bins, tray tables, assembly stations, assembly
-   * inserts, and the conveyor belt
-   *
-   */
-
-  void add_models_to_planning_scene ();
-  //-----------------------------//
-  void wait_for_attach_completion (double timeout);
-
-    // Subscriber
-    rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
-
-    // Service clients
-    rclcpp::Client<ChangeGripperSrv>::SharedPtr change_gripper_tool_client_;
-    rclcpp::Client<VacuumGripperControlSrv>::SharedPtr enable_gripper_client_;
 
     // Is it plan for pick and place
     // pick 1, place 2

@@ -12,6 +12,7 @@ from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
 from tf2_ros import TransformException
 
+from utils import COLOROFPARTS, TYPEOFPARTS
 from rwa5_2.srv import PickPlace
 
 FixQuadrantPositionsRelativeTray = {
@@ -114,7 +115,8 @@ class ProcessOrder():
         request = PickPlace.Request()
         if types=="pick":
             request.tray_id = -1
-            request.part_type = part_info["type"]
+            request.part_type =  TYPEOFPARTS[part_info["type"]]
+            request.part_color = COLOROFPARTS[part_info["color"]]
             request.destination_pose = part_info["pose"]
             request.gripper_station_pose = self._parts_info["gripper_station_pose"]
             request.pick_place = PickPlace.Request().PICK
@@ -122,7 +124,8 @@ class ProcessOrder():
         else:
 
             request.tray_id = -1
-            request.part_type = part_info["type"]
+            request.part_type = TYPEOFPARTS[part_info["type"]]
+            request.part_color = COLOROFPARTS[part_info["color"]]
 
             quadrant = part_info["quadrant"]
             relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
@@ -139,7 +142,7 @@ class ProcessOrder():
     def _getTrayOrder(self, tray_info, types):
         request = PickPlace.Request()
         request.tray_id = tray_info["id"]
-        request.part_type = -1
+        request.part_type = ""
         if types=="pick":
             request.destination_pose = tray_info["pose"]
             request.gripper_station_pose = tray_info["gripper_station_pose"]

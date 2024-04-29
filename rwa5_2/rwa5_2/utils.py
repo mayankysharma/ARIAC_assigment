@@ -15,6 +15,22 @@ from ariac_msgs.msg import (
     Order as OrderMsg
 )
 
+COLOROFPARTS = {
+    PartMsg.RED: 'red',
+    PartMsg.BLUE: 'blue',
+    PartMsg.GREEN: 'green',
+    PartMsg.ORANGE: 'orange',
+    PartMsg.PURPLE: 'purple',
+}
+
+
+TYPEOFPARTS = {
+    PartMsg.BATTERY: 'battery',
+    PartMsg.PUMP: 'pump',
+    PartMsg.REGULATOR: 'regulator',
+    PartMsg.SENSOR: 'sensor',
+}
+
 def Mult_pose(Pose_1: Pose, Pose_2: Pose) -> Pose:
     '''
     Using KDL to multiply two poses together.

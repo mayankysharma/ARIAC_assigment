@@ -10,8 +10,14 @@ from ariac_msgs.msg import (
 )
 from utils import(
     Order,
-    KittingTask
+    KittingTask,
+    TYPEOFPARTS,
+    COLOROFPARTS
 )
+
+
+
+
 
 class ReadStoreOrders():
     '''
@@ -39,13 +45,7 @@ class ReadStoreOrders():
         AssemblyTaskMsg.AS4: 'assembly station 4',
     }
 
-    _color_of_parts = {
-        PartMsg.RED: 'red',
-        PartMsg.BLUE: 'blue',
-        PartMsg.GREEN: 'green',
-        PartMsg.ORANGE: 'orange',
-        PartMsg.PURPLE: 'purple',
-    }
+
     '''Dictionary for converting Part color constants to strings'''
 
     _part_color_symbol = {
@@ -55,13 +55,11 @@ class ReadStoreOrders():
         PartMsg.ORANGE: '🟧',
         PartMsg.PURPLE: '🟪',
     }
+    
+    _color_of_parts = COLOROFPARTS
 
-    _type_of_parts = {
-        PartMsg.BATTERY: 'battery',
-        PartMsg.PUMP: 'pump',
-        PartMsg.REGULATOR: 'regulator',
-        PartMsg.SENSOR: 'sensor',
-    }
+    _type_of_parts = TYPEOFPARTS
+
     '''Dictionary for converting Part type constants to strings'''
 
     def __init__(self, node, topic_name1, order_queue, callback_group):
@@ -162,9 +160,9 @@ class ReadStoreOrders():
             product: KittingPart
             for product in kitting_task.parts:
                 if i == product.quadrant:
-                    _color_of_parts = ReadStoreOrders._color_of_parts[product.part.color].capitalize()
+                    _color_of_parts = COLOROFPARTS[product.part.color].capitalize()
                     _part_color_symbol = ReadStoreOrders._part_color_symbol[product.part.color]
-                    _type_of_parts = ReadStoreOrders._type_of_parts[product.part.type].capitalize()
+                    _type_of_parts = TYPEOFPARTS[product.part.type].capitalize()
                     quadrants[i] = f'Quadrant {i}: {_part_color_symbol} {_color_of_parts} {_type_of_parts}'
 
         output += f'\t{quadrants[1]}\n'

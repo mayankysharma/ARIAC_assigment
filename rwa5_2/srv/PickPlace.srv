@@ -6,7 +6,8 @@ geometry_msgs/Pose destination_pose
 geometry_msgs/Pose gripper_station_pose
 uint8 pick_place
 int8 tray_id # if -1 no tray
-int8 part_type  # if -1 no part else battery=ariac_msg.msg.part, sensor, etc.
+string part_type  # if -1 no part else battery=ariac_msg.msg.part, sensor, etc.
+string part_color
 ---
 # response
 bool success

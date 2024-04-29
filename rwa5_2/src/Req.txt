@@ -8,3 +8,6 @@ Using Ariac Services/Topics
 - To enable gripper  Service "/ariac/floor_robot_enable_gripper"
 - To change gripper Service "/ariac/floor_robot_change_gripper"
 
+service : 
+    pick_place extra things needed
+        - color
