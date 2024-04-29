@@ -45,7 +45,7 @@ ARIAC_SENSORS_2_Msg = {
 class SensorRead():
     def __init__(self, node, callback_group, sensor_config="sensors"):
         # Finding the package share directory
-        pkg_share = FindPackageShare(package='rwa4_2').find('rwa4_2')
+        pkg_share = FindPackageShare(package='rwa5_2').find('rwa5_2')
         sensor_config_path = os.path.join(pkg_share, 'config', sensor_config + ".yaml")
         
         # Initialize node and sensor data list
