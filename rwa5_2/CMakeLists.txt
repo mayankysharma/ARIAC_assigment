@@ -36,17 +36,24 @@ install(DIRECTORY
   launch
   doc
   config
+  meshes
   DESTINATION share/${PROJECT_NAME}/
 )
 
 set(
   ARIAC_INCLUDE_DIRS 
-  rclcpp
-  std_srvs
-  moveit_ros_planning_interface
+  rclcpp 
+  std_msgs
   ariac_msgs
+  tf2_ros
   geometry_msgs
   tf2
+  orocos_kdl
+  tf2_ros
+  tf2_geometry_msgs
+  moveit_msgs
+  geometric_shapes
+  moveit_ros_planning_interface
 )
 
 install(PROGRAMS
