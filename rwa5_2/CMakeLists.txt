@@ -9,11 +9,18 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ariac_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(moveit_msgs REQUIRED)
 find_package(orocos_kdl REQUIRED)
+
 find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
+find_package(rosidl_default_runtime REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
 
 # Generate services
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -22,6 +29,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES geometry_msgs 
 
 )
+
+
+# find_package(rosidl_interface_packages REQUIRED)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -35,16 +46,19 @@ endif()
 
 install(DIRECTORY
   launch
-  DESTINATION share/${PROJECT_NAME}/
-)
-install(DIRECTORY
   doc
+  config
   DESTINATION share/${PROJECT_NAME}/
 )
 
-install(DIRECTORY
-  config
-  DESTINATION share/${PROJECT_NAME}/
+set(
+  ARIAC_INCLUDE_DIRS 
+  rclcpp
+  std_srvs
+  moveit_ros_planning_interface
+  ariac_msgs
+  geometry_msgs
+  tf2
 )
 
 install(PROGRAMS
@@ -58,6 +72,23 @@ install(PROGRAMS
   rwa5_2/submit_orders.py
   rwa5_2/utils.py
   rwa5_2/sensor_read.py
-  DESTINATION lib/${PROJECT_NAME})
+  DESTINATION lib/${PROJECT_NAME}
+)
+include_directories(${ariac_msgs_INCLUDE_DIRS})
+# # Add include directory for header files
+include_directories(include)
+# Add the executable
+add_executable(floor_robot src/move_floor.cpp)
+
+# Link dependencies to the executable
+ament_target_dependencies(floor_robot
+${ARIAC_INCLUDE_DIRS}
+)
+
+# Install the executable
+install(TARGETS
+  floor_robot
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()

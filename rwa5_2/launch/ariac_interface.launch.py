@@ -14,6 +14,7 @@ def generate_launch_description():
         LaunchDescription: The LaunchDescription instance.
     '''
     ld = LaunchDescription()
+
     # Interface node
     rwa4_interface = Node(
         package="rwa5_2",
@@ -22,6 +23,7 @@ def generate_launch_description():
         output="screen",
         # parameters=generate_parameters()
     )
+
 
     ld.add_action(rwa4_interface)
     return ld  # Return LaunchDescription instance

@@ -1,0 +1,76 @@
+#pragma once
+#include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <ariac_msgs/msg/vacuum_gripper_state.hpp>
+#include <ariac_msgs/srv/change_gripper.hpp>
+#include <ariac_msgs/srv/vacuum_gripper_control.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <unistd.h>
+#include <cmath>
+class FloorRobotNode : public rclcpp::Node {
+public:
+    FloorRobotNode();
+
+    // Callback function for move robot service
+    void moveRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                        std_srvs::srv::Trigger::Response::SharedPtr response);
+    
+    /**
+     * @brief Pause the robot plan execution if it is running in pick mode
+     * 
+     * @param request 
+     * @param response 
+     */
+    void pauseRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                        std_srvs::srv::Trigger::Response::SharedPtr response);
+    
+    // /**
+    //  * @brief 
+    //  * 
+    //  * @param request 
+    //  * @param response 
+    //  */
+    // void resumeRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+    //                     std_srvs::srv::Trigger::Response::SharedPtr response);
+
+    // Callback function for gripper state subscriber
+    void floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripperState::SharedPtr msg);
+
+
+    /**
+     * @brief Using the service enable the gripper 
+     * service : "/ariac/floor_robot_enable_gripper"
+     */
+    bool changeGripperState(bool request);
+
+    /**
+     * @brief Change the gripper tool given from gripper client
+     * service : "/ariac/floor_robot_change_gripper"
+     */
+    bool changeGripperTool(uint8_t request);
+
+private:
+    moveit::planning_interface::MoveGroupInterface floor_robot_;
+
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
+    ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr pause_robot_service_;
+    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_robot_service_;
+
+    // Subscriber
+    rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
+
+    // Service clients
+    rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr change_gripper_tool_client_;
+    rclcpp::Client<ariac_msgs::srv::VacuumGripperControl>::SharedPtr enable_gripper_client_;
+
+    // Is it plan for pick and place
+    // pick 1, place 2
+    uint8_t pick_place_ = 0; 
+    // bool place_ = false;
+
+};

@@ -7,8 +7,8 @@
 3. Abraruddin Syed
 4. Dhruv Sharma
 
-## Instructions to run rwa4 
-Make sure that the trial file `rwa4_spring2024.yaml` is put in the ariac_gazebo package in the config folder. Then do the following steps to run:
+## Instructions to run rwa5 
+Make sure that the trial file `rwa5_spring2024.yaml` is put in the ariac_gazebo package in the config folder. Then do the following steps to run:
 * Clone the package in the src of the ARIAC workspace
 * cd in to the workspace ariac_ws/
 ```bash
@@ -16,7 +16,7 @@ cd ariac_ws/
 ``` 
 * Build the package using
   ```bash
-  colcon build --packages-select rwa4_2
+  colcon build --packages-select rwa5_2
 
   ```
 * Run in the chronology
@@ -25,19 +25,27 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-  ros2 launch rwa4_2 ariac_interface.launch.py 
+  ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa5_spring2024
   ```
-  Alternatively we can also do :
-  ```bash
-  ros2 run rwa4_2 ariac_interface.py
-  ```
+  
 
   - Second terminal
+  Start the competition
   ```
   source install/setup.bash
   ```
-  ```bash
-   ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa4_spring2024 sensor_name:=sensors.yaml competitor_pkg:=rwa4_2
+```
+ros2 service call /ariac/start_competition std_srvs/srv/Trigger
+```
+- Launch Moveit
+
   ```
+   ros2 launch rwa5_2 mov_launch.py 
+
+  ```
+- Trigger the move service
+```
+ros2 service call /move_floor_robot std_srvs/srv/Trigger
+```
 
 
