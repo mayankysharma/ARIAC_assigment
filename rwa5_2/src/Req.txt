@@ -1,0 +1,10 @@
+Server
+- "robot/pause"
+- "robot/resume"
+- "robot/move"
+
+Using Ariac Services/Topics
+- Subscribe to topic "/ariac/floor_robot_gripper_state"
+- To enable gripper  Service "/ariac/floor_robot_enable_gripper"
+- To change gripper Service "/ariac/floor_robot_change_gripper"
+

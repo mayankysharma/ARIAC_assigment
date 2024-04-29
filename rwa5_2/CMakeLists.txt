@@ -9,13 +9,18 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ariac_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(moveit_msgs REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(rcl_interfaces REQUIRED)
-
+find_package(rosidl_default_runtime REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
+
+# find_package(rosidl_interface_packages REQUIRED)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -34,6 +39,16 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
+set(
+  ARIAC_INCLUDE_DIRS 
+  rclcpp
+  std_srvs
+  moveit_ros_planning_interface
+  ariac_msgs
+  geometry_msgs
+  tf2
+)
+
 install(PROGRAMS
   rwa5_2/comp_state.py
   rwa5_2/ariac_interface_util.py
@@ -47,18 +62,15 @@ install(PROGRAMS
   rwa5_2/sensor_read.py
   DESTINATION lib/${PROJECT_NAME}
 )
-
-# Add include directory for header files
+include_directories(${ariac_msgs_INCLUDE_DIRS})
+# # Add include directory for header files
 include_directories(include)
-
 # Add the executable
 add_executable(floor_robot src/move_floor.cpp)
 
 # Link dependencies to the executable
 ament_target_dependencies(floor_robot
-  rclcpp
-  std_srvs
-  moveit_ros_planning_interface
+${ARIAC_INCLUDE_DIRS}
 )
 
 # Install the executable
