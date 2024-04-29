@@ -21,6 +21,17 @@ FloorRobotNode::FloorRobotNode()
         "/move_floor_robot",
         std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
 
+    // Create a service to pause the motion.
+    pause_robot_service_ = create_service<std_srvs::srv::Trigger>(
+        "/robot/pause",
+        std::bind(&FloorRobotNode::pauseRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+    // Create a service to pause the motion.
+    // resume_robot_service_ = create_service<std_srvs::srv::Trigger>(
+    //     "/robot/resume",
+    //     std::bind(&FloorRobotNode::resumeRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+
     enable_gripper_client_ = this->create_client<ariac_msgs::srv::VacuumGripperControl>("/ariac/floor_robot_enable_gripper");
     change_gripper_tool_client_ = this->create_client<ariac_msgs::srv::ChangeGripper>("/ariac/floor_robot_change_gripper");
     
@@ -73,7 +84,7 @@ void FloorRobotNode::moveRobotCallback(
         {
             response->success = true;
             response->message = "Robot moved successfully";
-            changeGripperState(1);
+            changeGripperState(true);
         }
         else
         {
@@ -88,6 +99,32 @@ void FloorRobotNode::moveRobotCallback(
     }
 }
 
+void FloorRobotNode::pauseRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                       std_srvs::srv::Trigger::Response::SharedPtr response){
+    
+    // Stopping the current execution
+    // if pick action
+    if (pick_place_==1){
+        floor_robot_.stop();
+        response->success=true;
+        response->message = "Stopped the Action";
+    }
+    else if(pick_place_==0){
+        response->success=true;
+        response->message = "No Current Action";
+    }
+    else{
+        response->success=false;
+        response->message = "Can't Stop Place Action";
+    }
+    
+}
+                    
+// void FloorRobotNode::resumeRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+//                        std_srvs::srv::Trigger::Response::SharedPtr response){
+    
+// }
+
 void FloorRobotNode::floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripperState::SharedPtr msg)
 {
     floor_gripper_state_= *msg;
@@ -95,7 +132,7 @@ void FloorRobotNode::floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripper
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received gripper state:");
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), floor_gripper_state_.type.c_str());
   
-//   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Suction enabled: %s", msg->enabled ? "true" : "false");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Suction enabled: %s", msg->enabled ? "true" : "false");
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Object attached: %s", msg->attached ? "true" : "false");
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Gripper type: %s", msg->type.c_str());
 }
@@ -106,7 +143,10 @@ bool FloorRobotNode::changeGripperState(bool request_en){
 
     request->enable = request_en;
     auto result_future = enable_gripper_client_->async_send_request(request);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to get response for change gripper state enabling suction");
     auto response = result_future.get();
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got response for change gripper state enabling suction");
+    
 
     if (response->success){
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully Enabled Gripper");
@@ -122,6 +162,8 @@ bool FloorRobotNode::changeGripperTool(uint8_t gripper_type){
 
     request->gripper_type = gripper_type; //ariac_msgs::srv::ChangeGripper::Request::PART_GRIPPER;
     auto result_future = change_gripper_tool_client_->async_send_request(request);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to get response");
+    result_future.wait();
     auto response = result_future.get();
 
     if (response->success){
