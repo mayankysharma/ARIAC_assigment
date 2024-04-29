@@ -15,12 +15,24 @@ find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(orocos_kdl REQUIRED)
+
+find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 
+# Generate services
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/PickPlace.srv"
+
+  DEPENDENCIES geometry_msgs 
+
+)
+
+
 # find_package(rosidl_interface_packages REQUIRED)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -53,7 +65,7 @@ install(PROGRAMS
   rwa5_2/comp_state.py
   rwa5_2/ariac_interface_util.py
   rwa5_2/ariac_interface_main.py
-  # rwa5_2/ariac_interface.py
+  rwa5_2/process_order.py
   rwa5_2/custom_timer.py
   rwa5_2/read_store_orders.py
   rwa5_2/ship_orders.py

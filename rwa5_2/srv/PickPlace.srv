@@ -1,0 +1,11 @@
+uint8 PICK=1
+uint8 PLACE=2
+
+# request
+geometry_msgs/Pose destination_pose
+geometry_msgs/Pose gripper_station_pose
+uint8 pick_place
+---
+# response
+bool success
+string message

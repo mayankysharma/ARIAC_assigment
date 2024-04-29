@@ -72,6 +72,18 @@ def Quart_to_RPY(quart: Quaternion) -> Tuple[float, float, float]:
     RPY = PyKDL.Rotation.Quaternion(quart.x, quart.y, quart.z, quart.w)
     return RPY.GetRPY()
 
+def RPY_to_Quart(rpy) -> Tuple[float, float, float, float]:
+    ''' 
+    Use KDL to convert a quaternion to euler angles roll, pitch, yaw.
+    Args:
+        q (Quaternion): quaternion to convert
+    Returns:
+        Tuple[float, float, float]: roll, pitch, yaw
+    '''
+    
+    RPY = PyKDL.Rotation.RPY(rpy[0],rpy[1],rpy[2])  #Quaternion(quart.x, quart.y, quart.z, quart.w)
+    return RPY.GetQuaternion()
+
 def RAD_TO_DEGREE(radians: float) -> str:
     '''
     Converts radians to degrees in the domain [-PI, PI]

@@ -14,16 +14,15 @@ def generate_launch_description():
         LaunchDescription: The LaunchDescription instance.
     '''
     ld = LaunchDescription()
-    # # Interface node
-    # rwa4_interface = Node(
-    #     package="rwa5
-    #     _2",
-    #     executable="ariac_interface_main.py",
-    #     name="rwa4_interface",
-    #     output="screen",
-    #     # parameters=generate_parameters()
-    # )
 
+    # Interface node
+    rwa4_interface = Node(
+        package="rwa5_2",
+        executable="ariac_interface_main.py",
+        name="rwa5_interface",
+        output="screen",
+        # parameters=generate_parameters()
+    )
 
 
     ld.add_action(rwa4_interface)
