@@ -10,11 +10,18 @@ FloorRobotNode::FloorRobotNode()
     : Node("floor_robot"),
       floor_robot_(std::shared_ptr<rclcpp::Node>(std::move(this)), "floor_robot")
 {
-    floor_robot_.setMaxAccelerationScalingFactor(1.0);
-    floor_robot_.setMaxVelocityScalingFactor(1.0);
+    floor_robot_.setMaxAccelerationScalingFactor(0.5);
+    floor_robot_.setMaxVelocityScalingFactor(0.7);
+
+    // allow replanning in dynamic environment
+    floor_robot_.allowReplanning(true);
+
+    // Set the number of times the motion plan is to be computed from scratch before the shortest solution is returned. The default value is 1. 
+    floor_robot_.setNumPlanningAttempts(5);
+    floor_robot_.setPlanningTime(5.0); // Set the maximum planning time to 1 seconds
 
     // Create callback groups
-    // auto service_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    
     auto subscription_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     // Create the service to move the robot
@@ -37,7 +44,6 @@ FloorRobotNode::FloorRobotNode()
     //     "/robot/resume",
     //     std::bind(&FloorRobotNode::resumeRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-
     enable_gripper_client_ = this->create_client<ariac_msgs::srv::VacuumGripperControl>("/ariac/floor_robot_enable_gripper");
     change_gripper_tool_client_ = this->create_client<ariac_msgs::srv::ChangeGripper>("/ariac/floor_robot_change_gripper");
     
@@ -58,14 +64,16 @@ void FloorRobotNode::moveRobotCallback(
     geometry_msgs::msg::Pose target_pose;
 
     // Set the position
-    target_pose.position.x = -2.080; // X coordinate
-    target_pose.position.y = 2.805;    // Y coordinate
-    target_pose.position.z = 0.723 + utils::OFFSETS["part"];  // Z coordinate
+    target_pose.position.x = request->destination_pose.position.x; // X coordinate
+    target_pose.position.y = request->destination_pose.position.y;    // Y coordinate
+    target_pose.position.z = request->destination_pose.position.x + utils::OFFSETS["part"];  // Z coordinate
 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Target pose x: %f, y: %f, z: %f",target_pose.position.x,target_pose.position.y,target_pose.position.z);
+       
     // Convert roll, pitch, yaw to quaternion
-    double roll = -3.14;   // Roll angle in radians
+    double roll = 3.14;   // Roll angle in radians
     double pitch = 0.00;   // Pitch angle in radians
-    double yaw = -1.57;    // Yaw angle in radians
+    double yaw = 1.57;    // Yaw angle in radians
     tf2::Quaternion orientation;
     orientation.setRPY(roll, pitch, yaw);
 
@@ -135,10 +143,10 @@ void FloorRobotNode::floor_gripper_state_cb(const ariac_msgs::msg::VacuumGripper
 {
     floor_gripper_state_= *msg;
   // This function will be called whenever a message is received on the "/ariac/floor_robot_gripper_state" topic
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received gripper state:");
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), floor_gripper_state_.type.c_str());
+//   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received gripper state:");
+//   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), floor_gripper_state_.type.c_str());
   
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Suction enabled: %s", msg->enabled ? "true" : "false");
+//   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Suction enabled: %s", msg->enabled ? "true" : "false");
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Object attached: %s", msg->attached ? "true" : "false");
 //   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Gripper type: %s", msg->type.c_str());
 }

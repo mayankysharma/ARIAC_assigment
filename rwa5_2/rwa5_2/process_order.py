@@ -9,6 +9,8 @@ from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
 from tf2_ros import TransformException
 
+from rwa5_2.srv import PickPlace
+
 FixQuadrantPositionsRelativeTray = {
     1 : np.array([-0.13, -0.08, 0]),
     2 : np.array([-0.13, 0.08, 0]),
@@ -63,20 +65,20 @@ class ProcessOrder():
         # get part info
         if len(parts_info) > 0:
             self._parts_info["parts_info"] = deque(parts_info)
-            gripper_loc = self.get_grip_changer_pose("parts",parts_info[0]["kts"])
-            if gripper_loc is None:
+            gripper_station_loc = self.get_gripper_station_pose("parts",parts_info[0]["kts"])
+            if gripper_station_loc is None:
                 raise Exception("Issue with the gripper change station location")
-            self._parts_info["grip_changer_pose"] = gripper_loc
+            self._parts_info["gripper_station_pose"] = gripper_station_loc
             agv_tray_loc = self.get_agv_tray_pose(parts_info[0]["agv_num"])
             if agv_tray_loc is None:
                 raise Exception("Issue with the agv tray location")
             self._parts_info["agv_tray_pose"] = agv_tray_loc
 
         # get tray info
-        gripper_loc = self.get_grip_changer_pose("trays",tray_info["kts"])
-        if gripper_loc is None:
+        gripper_station_loc = self.get_gripper_station_pose("trays",tray_info["kts"])
+        if gripper_station_loc is None:
             raise Exception("Issue with the gripper change station location")
-        tray_info.update({"gripper_change_pose" : gripper_loc})
+        tray_info.update({"gripper_station_pose" : gripper_station_loc})
 
         agv_tray_loc = self.get_agv_tray_pose(tray_info["agv_num"])
         if agv_tray_loc is None:
@@ -91,49 +93,59 @@ class ProcessOrder():
         """
         Pick and Place position, part
         """
-        if self._tray_info is not None:
-            if self._tray_info["pick"]:
-                self.node.get_logger().info("Tray pick")
-                # future = self.move_service.call(self._tray_info["pose"], self._tray_info["grip_changer_pose"], 1)
-                # future.add_done_callback(self.add_response_callback)  # Add response callback
-                self._tray_info["pick"] = False
-            else:
-                self.node.get_logger().info("Tray place")
-                # future = self.move_service.call(self._tray_info["agv_tray_pose"], self._tray_info["grip_changer_pose"], 2)
-                # future.add_done_callback(self.add_response_callback)  # Add response callback
-                self._tray_info = None
-            
-
-        elif len(self._parts_info["parts_info"])>0:
-            part_info = self._parts_info["parts_info"].popleft()
-            complete = False
-            if part_info["pick"]:
-                self.node.get_logger().info("Part pick")
-                # future = self.move_service.call(part_info["pose"], part_info["grip_changer_pose"], 1)
-                # future.add_done_callback(self.add_response_callback)  # Add response callback
-                part_info["pick"] = False
-            else:
-                # Compute place pose relative to AGV tray based on quadrant
-                quadrant = part_info["quadrant"]
-                if quadrant in FixQuadrantPositionsRelativeTray:
-                    self.node.get_logger().info("Part place")
-                    relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
-                    self._parts_info["agv_tray_pose"].position.x += relative_pose[0]
-                    self._parts_info["agv_tray_pose"].position.y += relative_pose[1]
-                    place_pose = self._parts_info["agv_tray_pose"]
-                    # future = self.move_service.call(place_pose, self._parts_info["grip_changer_pose"], 2)
+        try:
+            if self._tray_info is not None:
+                if self._tray_info["pick"]:
+                    self.node.get_logger().info("Tray pick")
+                    request = PickPlace.Request()
+                    request.destination_pose = self._tray_info["pose"]
+                    request.gripper_station_pose = self._tray_info["gripper_station_pose"]
+                    request.tray_id = self._tray_info["id"]
+                    request.part_type = -1
+                    request.pick_place = PickPlace.Request().PICK
+                    self.node.get_logger().info(f"Request {request}")
+                    future = self.node.move_service.call(request)
+                    self.node.get_logger().info(f"Tray picked {future}")
                     # future.add_done_callback(self.add_response_callback)  # Add response callback
-                    complete = True
+                    self._tray_info["pick"] = False
                 else:
-                    raise Exception("Quadrant information not found in FixQuadrantPositionsRelativeTray.")
-                    
-            if complete==False:
-                self._parts_info["parts_info"].appendleft(part_info)
-            
-        else:
-            self._parts_info = None
-            self._tray_info = None
+                    self.node.get_logger().info("Tray place")
+                    # future = self.move_service.call(self._tray_info["agv_tray_pose"], self._tray_info["gripper_station_pose"], 2)
+                    # future.add_done_callback(self.add_response_callback)  # Add response callback
+                    self._tray_info = None
+                
 
+            elif len(self._parts_info["parts_info"])>0:
+                part_info = self._parts_info["parts_info"].popleft()
+                complete = False
+                if part_info["pick"]:
+                    self.node.get_logger().info("Part pick")
+                    # future = self.move_service.call(part_info["pose"], part_info["gripper_station_pose"], 1)
+                    # future.add_done_callback(self.add_response_callback)  # Add response callback
+                    part_info["pick"] = False
+                else:
+                    # Compute place pose relative to AGV tray based on quadrant
+                    quadrant = part_info["quadrant"]
+                    if quadrant in FixQuadrantPositionsRelativeTray:
+                        self.node.get_logger().info("Part place")
+                        relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
+                        self._parts_info["agv_tray_pose"].position.x += relative_pose[0]
+                        self._parts_info["agv_tray_pose"].position.y += relative_pose[1]
+                        place_pose = self._parts_info["agv_tray_pose"]
+                        # future = self.move_service.call(place_pose, self._parts_info["gripper_station_pose"], 2)
+                        # future.add_done_callback(self.add_response_callback)  # Add response callback
+                        complete = True
+                    else:
+                        raise Exception("Quadrant information not found in FixQuadrantPositionsRelativeTray.")
+                        
+                if complete==False:
+                    self._parts_info["parts_info"].appendleft(part_info)
+                
+            else:
+                self._parts_info = None
+                self._tray_info = None
+        except Exception as e:
+            self.node.get_logger().error(f"ERROR : {e}")
         return  
 
 
@@ -186,9 +198,9 @@ class ProcessOrder():
         """
         Return True if all the parts and tray are been put in place as given by order
         """
-        self.node.get_logger().info(f"Order info : {self._order_id}")
-        self.node.get_logger().info(f"Tray info : {self._tray_info}")
-        self.node.get_logger().info(f"Parts info : {self._parts_info}")
+        # self.node.get_logger().info(f"Order info : {self._order_id}")
+        # self.node.get_logger().info(f"Tray info : {self._tray_info}")
+        # self.node.get_logger().info(f"Parts info : {self._parts_info}")
         if self._tray_info is None and self._parts_info is None:
             return True
         return False
@@ -209,7 +221,7 @@ class ProcessOrder():
             
         return True
 
-    def get_grip_changer_pose(self, gripper_type, kts) -> Pose:
+    def get_gripper_station_pose(self, gripper_type, kts) -> Pose:
         """
         This Function get the pose of the gripper change station, so that robot can move there and change
         there according to task (defined as gripper type)
