@@ -26,9 +26,8 @@ from ariac_msgs.msg import (
     PartPose as PartPoseMsg,
 )
 from std_srvs.srv import Trigger
+
 from rwa5_2.srv import PickPlace
-
-
 from process_order import ProcessOrder
 from sensor_read import SensorRead
 class AriacInterface(Node):
