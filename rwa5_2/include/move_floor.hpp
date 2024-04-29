@@ -14,6 +14,10 @@
 
 #include "rwa5_2/srv/pick_place.hpp"
 
+using PickPlaceSrv = rwa5_2::srv::PickPlace;
+using ChangeGripperSrv = ariac_msgs::srv::ChangeGripper;
+using VacuumGripperControlSrv = ariac_msgs::srv::VacuumGripperControl;
+
 class FloorRobotNode : public rclcpp::Node {
 public:
     FloorRobotNode();
@@ -49,13 +53,13 @@ public:
      * @brief Using the service enable the gripper 
      * service : "/ariac/floor_robot_enable_gripper"
      */
-    bool changeGripperState(bool request);
+    bool changeGripperState(rclcpp::Client<VacuumGripperControlSrv>::SharedFuture future);
 
     /**
      * @brief Change the gripper tool given from gripper client
      * service : "/ariac/floor_robot_change_gripper"
      */
-    bool changeGripperTool(uint8_t request);
+    bool changeGripperTool(rclcpp::Client<ChangeGripperSrv>::SharedFuture future);
 
 private:
     moveit::planning_interface::MoveGroupInterface floor_robot_;
@@ -70,12 +74,14 @@ private:
     rclcpp::Subscription<ariac_msgs::msg::VacuumGripperState>::SharedPtr gripper_state_sub_;
 
     // Service clients
-    rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr change_gripper_tool_client_;
-    rclcpp::Client<ariac_msgs::srv::VacuumGripperControl>::SharedPtr enable_gripper_client_;
+    rclcpp::Client<ChangeGripperSrv>::SharedPtr change_gripper_tool_client_;
+    rclcpp::Client<VacuumGripperControlSrv>::SharedPtr enable_gripper_client_;
 
     // Is it plan for pick and place
     // pick 1, place 2
     uint8_t pick_place_ = 0; 
     // bool place_ = false;
 
+    bool _change_gripper_tool_service_started = false; 
+    bool _enable_gripper_service_started = false;
 };

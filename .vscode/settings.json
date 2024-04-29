@@ -6,6 +6,7 @@
         "/opt/ros/galactic/lib/python3.8/site-packages"
     ],
     "files.associations": {
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "cmath": "cpp"
     }
 }
