@@ -12,6 +12,16 @@ find_package(ariac_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(orocos_kdl REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
+# Generate services
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/PickPlace.srv"
+
+  DEPENDENCIES geometry_msgs 
+
+)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

@@ -26,6 +26,8 @@ from ariac_msgs.msg import (
     PartPose as PartPoseMsg,
 )
 from std_srvs.srv import Trigger
+from rwa5_2.srv import PickPlace
+
 
 from process_order import ProcessOrder
 from sensor_read import SensorRead
@@ -44,6 +46,7 @@ class AriacInterface(Node):
 
     pause_service_name = "/robot/pause"
     resume_service_name = "/robot/resume"
+    move_service_name="/robot/move"
 
     def __init__(self, node_name):
         """
@@ -74,6 +77,10 @@ class AriacInterface(Node):
         # Resume service for the previous order
         self.resume_service = self.create_client(Trigger,
                                                 AriacInterface.resume_service_name,
+                                                callback_group=group_reentrant1)
+        # Resume service for the previous order
+        self.move_service = self.create_client(PickPlace,
+                                                AriacInterface.move_service_name,
                                                 callback_group=group_reentrant1)
 
         self.current_order_priority = False
@@ -118,6 +125,8 @@ class AriacInterface(Node):
                     self.get_logger().error(f"PROBLEM WITH THE GETING THE PARTS AND TRAY INFO FROM ENVIRONMENT!!!! \n {e}")
                     
             if not process_order.isOrderProcessed:
+                self.get_logger().info(f"Processing the order {order.order_id}!!")
+
                 # Start processing the order
                 process_order.get_pick_place_position()
                     

@@ -67,7 +67,7 @@ class ProcessOrder():
             if gripper_loc is None:
                 raise Exception("Issue with the gripper change station location")
             self._parts_info["grip_changer_pose"] = gripper_loc
-            agv_tray_loc = self.get_grip_changer_pose("parts",parts_info[0]["agv_num"])
+            agv_tray_loc = self.get_agv_tray_pose(parts_info[0]["agv_num"])
             if agv_tray_loc is None:
                 raise Exception("Issue with the agv tray location")
             self._parts_info["agv_tray_pose"] = agv_tray_loc
@@ -78,7 +78,7 @@ class ProcessOrder():
             raise Exception("Issue with the gripper change station location")
         tray_info.update({"gripper_change_pose" : gripper_loc})
 
-        agv_tray_loc = self.get_grip_changer_pose("trays",tray_info["agv_num"])
+        agv_tray_loc = self.get_agv_tray_pose(tray_info["agv_num"])
         if agv_tray_loc is None:
             raise Exception("Issue with the agv tray location")
         tray_info.update({"agv_tray_pose" : agv_tray_loc})
@@ -92,31 +92,93 @@ class ProcessOrder():
         Pick and Place position, part
         """
         if self._tray_info is not None:
-            # pick and place tray call service here
-            # pick_p = 1
-            # if self._tray_info["pick"]:
-            #     future = service.call(self._tray_info["pose"],pick)
-            #      future.add_response_callback()   
-            #      self._tray_info["pick"] = False
-            # else:
-            #     service.call(self._tray_info["agv_tray_pose"], place)
-            #     self._tray_info = None
-            pass
-        elif self._parts_info is not None:
-            # # pick and place part call service here
-            # part_info = self._parts_info["parts_info"].popleft()
-            # complete = False
-            # if part_info["pick"]:
-            #     service.call(self._tray_info["pose"],pick)
-            #     part_info["pick"] = False
-            # else:
-            #     # place_pose compute relative agv_tray to quadrant
-            #     # service.call()
-            #     completed = True
-            # self._parts_info["parts_info"].appendleft(part_info)
-            pass
+            if self._tray_info["pick"]:
+                self.node.get_logger().info("Tray pick")
+                # future = self.move_service.call(self._tray_info["pose"], self._tray_info["grip_changer_pose"], 1)
+                # future.add_done_callback(self.add_response_callback)  # Add response callback
+                self._tray_info["pick"] = False
+            else:
+                self.node.get_logger().info("Tray place")
+                # future = self.move_service.call(self._tray_info["agv_tray_pose"], self._tray_info["grip_changer_pose"], 2)
+                # future.add_done_callback(self.add_response_callback)  # Add response callback
+                self._tray_info = None
+            
+
+        elif len(self._parts_info["parts_info"])>0:
+            part_info = self._parts_info["parts_info"].popleft()
+            complete = False
+            if part_info["pick"]:
+                self.node.get_logger().info("Part pick")
+                # future = self.move_service.call(part_info["pose"], part_info["grip_changer_pose"], 1)
+                # future.add_done_callback(self.add_response_callback)  # Add response callback
+                part_info["pick"] = False
+            else:
+                # Compute place pose relative to AGV tray based on quadrant
+                quadrant = part_info["quadrant"]
+                if quadrant in FixQuadrantPositionsRelativeTray:
+                    self.node.get_logger().info("Part place")
+                    relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
+                    self._parts_info["agv_tray_pose"].position.x += relative_pose[0]
+                    self._parts_info["agv_tray_pose"].position.y += relative_pose[1]
+                    place_pose = self._parts_info["agv_tray_pose"]
+                    # future = self.move_service.call(place_pose, self._parts_info["grip_changer_pose"], 2)
+                    # future.add_done_callback(self.add_response_callback)  # Add response callback
+                    complete = True
+                else:
+                    raise Exception("Quadrant information not found in FixQuadrantPositionsRelativeTray.")
+                    
+            if complete==False:
+                self._parts_info["parts_info"].appendleft(part_info)
+            
+        else:
+            self._parts_info = None
+            self._tray_info = None
+
+        return  
+
+
+        #     # pick and place tray call service here
+        #     #pick_p = 1
+        #     # if self._tray_info["pick"]:
+        #     #     future = service.call(self._tray_info["pose"],pick)
+        #     #      future.add_response_callback()   
+        #     #      self._tray_info["pick"] = False
+        #     # else:
+        #     #     service.call(self._tray_info["agv_tray_pose"], place)
+        #     #     self._tray_info = None
+        #     #pass
+        # elif self._parts_info is not None:
+        #     # # pick and place part call service here
+        #     # part_info = self._parts_info["parts_info"].popleft()
+        #     # complete = False
+        #     # if part_info["pick"]:
+        #     #     service.call(self._tray_info["pose"],pick)
+        #     #     part_info["pick"] = False
+        #     # else:
+        #     #     # place_pose compute relative agv_tray to quadrant
+        #     #     # service.call(self._tray_info["pose"],place)
+        #     #     completed = True
+        #     # self._parts_info["parts_info"].appendleft(part_info)
+        #     pass
         
-        return
+        # return
+
+    def add_response_callback(self, future):
+        """
+        response callback function for handling success and message.
+        """
+        # Check if the future has a result
+        if future.done() and not future.cancelled():
+            result = future.result()
+            # Check if the result is successful
+            if result.success:
+                print("Service call successful:", result.message)
+                # Handle success scenario here
+            else:
+                print("Service call failed:", result.message)
+                # Handle failure scenario here
+        else:
+            print("Future was cancelled or did not complete successfully.")
 
     
     @property
@@ -124,6 +186,9 @@ class ProcessOrder():
         """
         Return True if all the parts and tray are been put in place as given by order
         """
+        self.node.get_logger().info(f"Order info : {self._order_id}")
+        self.node.get_logger().info(f"Tray info : {self._tray_info}")
+        self.node.get_logger().info(f"Parts info : {self._parts_info}")
         if self._tray_info is None and self._parts_info is None:
             return True
         return False
