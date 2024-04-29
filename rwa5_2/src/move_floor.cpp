@@ -5,6 +5,7 @@
 #include "utils.hpp"
 #include "move_floor.hpp"
 
+
 FloorRobotNode::FloorRobotNode()
     : Node("floor_robot"),
       floor_robot_(std::shared_ptr<rclcpp::Node>(std::move(this)), "floor_robot")
@@ -17,14 +18,19 @@ FloorRobotNode::FloorRobotNode()
     auto subscription_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
     // Create the service to move the robot
-    move_robot_service_ = create_service<std_srvs::srv::Trigger>(
-        "/move_floor_robot",
-        std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+    // move_robot_service_ = create_service<std_srvs::srv::Trigger>(
+    //     "/move_floor_robot",
+    //     std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Create a service to pause the motion.
     pause_robot_service_ = create_service<std_srvs::srv::Trigger>(
         "/robot/pause",
         std::bind(&FloorRobotNode::pauseRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+    move_robot_service_ = create_service<rwa5_2::srv::PickPlace>(
+        "/robot/move",
+        std::bind(&FloorRobotNode::moveRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+
 
     // Create a service to pause the motion.
     // resume_robot_service_ = create_service<std_srvs::srv::Trigger>(
@@ -45,8 +51,8 @@ FloorRobotNode::FloorRobotNode()
         subscription_options);
 }
 void FloorRobotNode::moveRobotCallback(
-    const std_srvs::srv::Trigger::Request::SharedPtr /* request */,
-    std_srvs::srv::Trigger::Response::SharedPtr response)
+    const rwa5_2::srv::PickPlace::Request::SharedPtr request ,
+    rwa5_2::srv::PickPlace::Response::SharedPtr response)
 {
     // Define the target pose
     geometry_msgs::msg::Pose target_pose;

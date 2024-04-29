@@ -11,13 +11,17 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <unistd.h>
 #include <cmath>
+
+#include "rwa5_2/srv/pick_place.hpp"
+
 class FloorRobotNode : public rclcpp::Node {
 public:
     FloorRobotNode();
 
     // Callback function for move robot service
-    void moveRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                        std_srvs::srv::Trigger::Response::SharedPtr response);
+    void moveRobotCallback(
+    const rwa5_2::srv::PickPlace::Request::SharedPtr request ,
+    rwa5_2::srv::PickPlace::Response::SharedPtr response);
     
     /**
      * @brief Pause the robot plan execution if it is running in pick mode
@@ -56,9 +60,10 @@ public:
 private:
     moveit::planning_interface::MoveGroupInterface floor_robot_;
 
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
+    // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
     ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr pause_robot_service_;
+    rclcpp::Service<rwa5_2::srv::PickPlace>::SharedPtr move_robot_service_;
     // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_robot_service_;
 
     // Subscriber

@@ -22,14 +22,6 @@ find_package(rcl_interfaces REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 
-# Generate services
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/PickPlace.srv"
-
-  DEPENDENCIES geometry_msgs 
-
-)
-
 
 # find_package(rosidl_interface_packages REQUIRED)
 
@@ -43,6 +35,13 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+# Generate services
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/PickPlace.srv"
+  DEPENDENCIES geometry_msgs 
+)
+
 
 install(DIRECTORY
   launch
@@ -83,7 +82,11 @@ add_executable(floor_robot src/move_floor.cpp)
 # Link dependencies to the executable
 ament_target_dependencies(floor_robot
 ${ARIAC_INCLUDE_DIRS}
+
 )
+
+# Link the custom service defined in the package to exec
+rosidl_target_interfaces(floor_robot ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Install the executable
 install(TARGETS
