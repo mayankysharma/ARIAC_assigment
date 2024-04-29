@@ -2,6 +2,9 @@
 from collections import deque
 import numpy as np
 import rclpy
+from functools import partial
+import traceback
+import sys
 
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
@@ -40,6 +43,14 @@ class ProcessOrder():
 
         self._recievedOrder = False
 
+        # place flag : monitor if the robot is placing the part or tray
+        self._place = False 
+
+        ## store all the order info in list
+        self._order = deque()
+
+        ## check if any order part in process
+        self.current_order= False
     
     @property
     def recievedOrder(self):
@@ -61,121 +72,112 @@ class ProcessOrder():
 
         self._parts_info = {}
         self._tray_info = {}
+        try:
+            # get part info
+            if len(parts_info) > 0:
+                self._parts_info["parts_info"] = deque(parts_info)
+                gripper_station_loc = self.get_gripper_station_pose("parts",parts_info[0]["kts"])
+                if gripper_station_loc is None:
+                    raise Exception("Issue with the gripper change station location")
+                self._parts_info["gripper_station_pose"] = gripper_station_loc
+                agv_tray_loc = self.get_agv_tray_pose(parts_info[0]["agv_num"])
+                if agv_tray_loc is None:
+                    raise Exception("Issue with the agv tray location")
+                self._parts_info["agv_tray_pose"] = agv_tray_loc
+                for part_info in parts_info:
+                    self._order.appendleft((self._getPartOrder(part_info,"pick"),self._getPartOrder(part_info,"place")))
 
-        # get part info
-        if len(parts_info) > 0:
-            self._parts_info["parts_info"] = deque(parts_info)
-            gripper_station_loc = self.get_gripper_station_pose("parts",parts_info[0]["kts"])
+            # get tray info
+            gripper_station_loc = self.get_gripper_station_pose("trays",tray_info["kts"])
             if gripper_station_loc is None:
                 raise Exception("Issue with the gripper change station location")
-            self._parts_info["gripper_station_pose"] = gripper_station_loc
-            agv_tray_loc = self.get_agv_tray_pose(parts_info[0]["agv_num"])
+            tray_info.update({"gripper_station_pose" : gripper_station_loc})
+
+            agv_tray_loc = self.get_agv_tray_pose(tray_info["agv_num"])
             if agv_tray_loc is None:
                 raise Exception("Issue with the agv tray location")
-            self._parts_info["agv_tray_pose"] = agv_tray_loc
+            tray_info.update({"agv_tray_pose" : agv_tray_loc})
 
-        # get tray info
-        gripper_station_loc = self.get_gripper_station_pose("trays",tray_info["kts"])
-        if gripper_station_loc is None:
-            raise Exception("Issue with the gripper change station location")
-        tray_info.update({"gripper_station_pose" : gripper_station_loc})
+   
+            # self._order.appendleft((self._getTrayOrder(tray_info,"pick"),self._getTrayOrder(tray_info,"place")))
 
-        agv_tray_loc = self.get_agv_tray_pose(tray_info["agv_num"])
-        if agv_tray_loc is None:
-            raise Exception("Issue with the agv tray location")
-        tray_info.update({"agv_tray_pose" : agv_tray_loc})
+        except Exception as e:
+            self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
 
-        self._tray_info = tray_info
         self._recievedOrder = True
         return True
+
+    def _getPartOrder(self, part_info, types):
+        request = PickPlace.Request()
+        if types=="pick":
+            request.tray_id = -1
+            request.part_type = part_info["type"]
+            request.destination_pose = part_info["pose"]
+            request.gripper_station_pose = self._parts_info["gripper_station_pose"]
+            request.pick_place = PickPlace.Request().PICK
+
+        else:
+
+            request.tray_id = -1
+            request.part_type = part_info["type"]
+
+            quadrant = part_info["quadrant"]
+            relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
+
+            request.destination_pose = Pose()
+            request.destination_pose.position.x = self._parts_info["agv_tray_pose"].position.x + relative_pose[0]
+            request.destination_pose.position.y = self._parts_info["agv_tray_pose"].position.y + relative_pose[1]
+            
+            request.gripper_station_pose = self._parts_info["gripper_station_pose"]
+            request.pick_place = PickPlace.Request().PLACE
+
+        return request
+                
+    def _getTrayOrder(self, tray_info, types):
+        request = PickPlace.Request()
+        request.tray_id = tray_info["id"]
+        request.part_type = -1
+        if types=="pick":
+            request.destination_pose = tray_info["pose"]
+            request.gripper_station_pose = tray_info["gripper_station_pose"]
+            request.pick_place = PickPlace.Request().PICK
+            
+        else:
+            request.destination_pose = tray_info["agv_tray_pose"]
+            request.gripper_station_pose = tray_info["gripper_station_pose"]
+            request.pick_place = PickPlace.Request().PLACE
+
+        return request
+
 
     def get_pick_place_position(self):
         """
         Pick and Place position, part
         """
         try:
-            if self._tray_info is not None:
-                if self._tray_info["pick"]:
-                    self.node.get_logger().info("Tray pick")
-                    request = PickPlace.Request()
-                    request.destination_pose = self._tray_info["pose"]
-                    request.gripper_station_pose = self._tray_info["gripper_station_pose"]
-                    request.tray_id = self._tray_info["id"]
-                    request.part_type = -1
-                    request.pick_place = PickPlace.Request().PICK
-                    self.node.get_logger().info(f"Request {request}")
-                    future = self.node.move_service.call(request)
-                    self.node.get_logger().info(f"Tray picked {future}")
-                    # future.add_done_callback(self.add_response_callback)  # Add response callback
-                    self._tray_info["pick"] = False
+            if not self.current_order:
+                self.current_order = True
+                order_pick, order_place = self._order.popleft()
+                if order_pick is None:
+                    current_order = order_place #self._order.popleft()[1]
                 else:
-                    self.node.get_logger().info("Tray place")
-                    # future = self.move_service.call(self._tray_info["agv_tray_pose"], self._tray_info["gripper_station_pose"], 2)
-                    # future.add_done_callback(self.add_response_callback)  # Add response callback
-                    self._tray_info = None
+                    current_order = order_pick
+                    self._order.appendleft((None,order_place))
+                self.node.get_logger().info(f"Request {current_order}")
+                future = self.node.move_service.call_async(current_order)
                 
-
-            elif len(self._parts_info["parts_info"])>0:
-                part_info = self._parts_info["parts_info"].popleft()
-                complete = False
-                if part_info["pick"]:
-                    self.node.get_logger().info("Part pick")
-                    # future = self.move_service.call(part_info["pose"], part_info["gripper_station_pose"], 1)
-                    # future.add_done_callback(self.add_response_callback)  # Add response callback
-                    part_info["pick"] = False
-                else:
-                    # Compute place pose relative to AGV tray based on quadrant
-                    quadrant = part_info["quadrant"]
-                    if quadrant in FixQuadrantPositionsRelativeTray:
-                        self.node.get_logger().info("Part place")
-                        relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
-                        self._parts_info["agv_tray_pose"].position.x += relative_pose[0]
-                        self._parts_info["agv_tray_pose"].position.y += relative_pose[1]
-                        place_pose = self._parts_info["agv_tray_pose"]
-                        # future = self.move_service.call(place_pose, self._parts_info["gripper_station_pose"], 2)
-                        # future.add_done_callback(self.add_response_callback)  # Add response callback
-                        complete = True
-                    else:
-                        raise Exception("Quadrant information not found in FixQuadrantPositionsRelativeTray.")
+                future.add_done_callback(partial(self.add_response_callback,info=current_order))  # Add response callback
                         
-                if complete==False:
-                    self._parts_info["parts_info"].appendleft(part_info)
-                
             else:
-                self._parts_info = None
-                self._tray_info = None
+                # do nothing as wait for previous order to process
+                pass
+
         except Exception as e:
-            self.node.get_logger().error(f"ERROR : {e}")
+            self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
+
         return  
-
-
-        #     # pick and place tray call service here
-        #     #pick_p = 1
-        #     # if self._tray_info["pick"]:
-        #     #     future = service.call(self._tray_info["pose"],pick)
-        #     #      future.add_response_callback()   
-        #     #      self._tray_info["pick"] = False
-        #     # else:
-        #     #     service.call(self._tray_info["agv_tray_pose"], place)
-        #     #     self._tray_info = None
-        #     #pass
-        # elif self._parts_info is not None:
-        #     # # pick and place part call service here
-        #     # part_info = self._parts_info["parts_info"].popleft()
-        #     # complete = False
-        #     # if part_info["pick"]:
-        #     #     service.call(self._tray_info["pose"],pick)
-        #     #     part_info["pick"] = False
-        #     # else:
-        #     #     # place_pose compute relative agv_tray to quadrant
-        #     #     # service.call(self._tray_info["pose"],place)
-        #     #     completed = True
-        #     # self._parts_info["parts_info"].appendleft(part_info)
-        #     pass
-        
-        # return
-
-    def add_response_callback(self, future):
+    
+    def add_response_callback(self, future, info):
         """
         response callback function for handling success and message.
         """
@@ -188,30 +190,39 @@ class ProcessOrder():
                 # Handle success scenario here
             else:
                 print("Service call failed:", result.message)
+
+                ## Regain the info for use when the order process resumes
+                if info.pick_place==PickPlace.Request().PICK:
+                    pick_o,place_o = self._order.popleft()
+                    self._order.appendleft((pick_o,place_o))
+                else:
+                    self._order.appendleft((None,info))
+            
                 # Handle failure scenario here
         else:
             print("Future was cancelled or did not complete successfully.")
+        self._place = False
+        self.current_order= False
 
-    
     @property
     def isOrderProcessed(self) -> bool:
         """
         Return True if all the parts and tray are been put in place as given by order
         """
-        # self.node.get_logger().info(f"Order info : {self._order_id}")
-        # self.node.get_logger().info(f"Tray info : {self._tray_info}")
-        # self.node.get_logger().info(f"Parts info : {self._parts_info}")
-        if self._tray_info is None and self._parts_info is None:
-            return True
-        return False
+
+        return len(self._order)==0
     
     def pause(self):
         """
         Pause the process, service call to moveit, to pause
         """
+        while self._place:
+            # if robot in place motion then wait till it complete
+            continue
+        
         # Build the request
         request = Trigger.Request()
-        response = self.pause_service.call(request)
+        response = self.pause_service.call_async(request)
         # Check the result of the service call.
         if response.success:
             self.node.get_logger().info(f'Successfully Paused the robot for order id {self._order_id}')
@@ -298,8 +309,6 @@ class ProcessOrder():
             self.node.get_logger().error(
                 f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
             return None
-            # count+=1
-        # if t is None:
-        #     return None
+
         return  agv_tray_pose
 

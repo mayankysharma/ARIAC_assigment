@@ -63,10 +63,18 @@ void FloorRobotNode::moveRobotCallback(
     // Define the target pose
     geometry_msgs::msg::Pose target_pose;
 
+    float offset = 0.0;
+    if (request->part_type!=-1)
+        offset = utils::OFFSETS["part"] + utils::PART_HEIGHTS[request->part_type];
+    else
+    {
+        offset = utils::OFFSETS["tray"]; //+ utils::PART_HEIGHTS[request->tray_id];
+    } 
+
     // Set the position
     target_pose.position.x = request->destination_pose.position.x; // X coordinate
     target_pose.position.y = request->destination_pose.position.y;    // Y coordinate
-    target_pose.position.z = request->destination_pose.position.x + utils::OFFSETS["part"];  // Z coordinate
+    target_pose.position.z = request->destination_pose.position.z + offset;  // Z coordinate
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Target pose x: %f, y: %f, z: %f",target_pose.position.x,target_pose.position.y,target_pose.position.z);
        
@@ -98,7 +106,7 @@ void FloorRobotNode::moveRobotCallback(
         {
             response->success = true;
             response->message = "Robot moved successfully";
-            changeGripperState(true);
+            // changeGripperState(true);
         }
         else
         {
