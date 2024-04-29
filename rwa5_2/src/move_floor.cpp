@@ -75,8 +75,20 @@ void FloorRobotNode::moveRobotCallback(
     const std_srvs::srv::Trigger::Request::SharedPtr /* request */,
     std_srvs::srv::Trigger::Response::SharedPtr response)
 {
+    //Sensor pose
+      geometry_msgs::msg::Pose target_pose;
     // Define the target pose
-    geometry_msgs::msg::Pose target_pose;
+    geometry_msgs::msg::Pose sensor_pose;
+    sensor_pose.position.x = -2.080; // X coordinate
+    sensor_pose.position.y = 2.805;    // Y coordinate
+    sensor_pose.position.z = 0.723;
+    tf2::Quaternion orientation;
+
+    sensor_pose.orientation.x = orientation.x();
+    sensor_pose.orientation.y = orientation.y();
+    sensor_pose.orientation.z = orientation.z();
+    sensor_pose.orientation.w = orientation.w();
+
     std::vector<geometry_msgs::msg::Pose> waypoints;
 
     // Set the position
@@ -88,7 +100,7 @@ void FloorRobotNode::moveRobotCallback(
     double roll = -3.14;   // Roll angle in radians
     double pitch = 0.00;   // Pitch angle in radians
     double yaw = 1.57;    // Yaw angle in radians
-    tf2::Quaternion orientation;
+    // tf2::Quaternion orientation;
     orientation.setRPY(roll, pitch, yaw);
 
     // Set the orientation
@@ -114,6 +126,11 @@ void FloorRobotNode::moveRobotCallback(
             
             response->message = "Robot moved successfully";
             changeGripperState(true);
+            std::string part_name = "green" + std::string("_") + "sensor";
+  add_single_model_to_planning_scene(
+      part_name, "sensor.stl", sensor_pose);
+            floor_robot_.attachObject(part_name);
+
             auto start = std::chrono::high_resolution_clock::now();
 
     while (true) {
