@@ -551,9 +551,10 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
 {  
 
   geometry_msgs::msg::Pose part_pose = req->part_pose_in_world;
-  double part_rotation = Utils::get_yaw_from_pose(part_pose);
+
   uint8_t part_type = req->part_type;
   uint8_t part_color = req->part_color; 
+
   std::string bin_side = "";
 
   RCLCPP_INFO(get_logger(), "Received request to pict the part type: %d, color: %d",part_type, part_color);
@@ -565,7 +566,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
     if (part.part.type == part_type &&
         part.part.color == part_color)
     {
-      part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
+      // part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
       found_part = true;
       bin_side = "left_bins";
       break;
@@ -579,7 +580,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
       if (part.part.type == part_type &&
           part.part.color == part_color)
       {
-        part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
+        // part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
         found_part = true;
         bin_side = "right_bins";
         break;
@@ -592,6 +593,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
     res->message = "Unable to find the part";
   }
 
+  double part_rotation = Utils::get_yaw_from_pose(part_pose);
   // Change gripper at location closest to part
   if (floor_gripper_state_.type != "part_gripper")
   {
@@ -637,10 +639,11 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
 
   move_through_waypoints(waypoints, 0.3, 0.3);
 
-  set_gripper_state(true);
-
+  // set_gripper_state(true);
+  RCLCPP_INFO(get_logger(), "Attached Part waiting for 3 sec");
   wait_for_attach_completion(3.0);
-
+  
+    RCLCPP_INFO(get_logger(), "Attaching!!");
   // Add part to planning scene
   std::string part_name =
       part_colors_[part_color] + "_" + part_types_[part_type];
@@ -655,6 +658,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
       Utils::build_pose(part_pose.position.x, part_pose.position.y,
                         part_pose.position.z + 0.3, set_robot_orientation(0)));
 
+    RCLCPP_INFO(get_logger(), "Moving up slightly");
   move_through_waypoints(waypoints, 0.3, 0.3);
   
   res->success = true;
@@ -1423,18 +1427,18 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
   move_through_waypoints(waypoints, 0.3, 0.3);
 
   // Drop part in quadrant
-  set_gripper_state(false);
+  // set_gripper_state(false);
 
-  std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
-                          part_types_[floor_robot_attached_part_.type];
-  floor_robot_->detachObject(part_name);
+  // std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
+  //                         part_types_[floor_robot_attached_part_.type];
+  // floor_robot_->detachObject(part_name);
 
-  waypoints.clear();
-  waypoints.push_back(Utils::build_pose(
-      part_drop_pose.position.x, part_drop_pose.position.y,
-      part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
+  // waypoints.clear();
+  // waypoints.push_back(Utils::build_pose(
+  //     part_drop_pose.position.x, part_drop_pose.position.y,
+  //     part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
 
-  move_through_waypoints(waypoints, 0.2, 0.1);
+  // move_through_waypoints(waypoints, 0.2, 0.1);
 
   return true;
 }

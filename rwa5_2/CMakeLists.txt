@@ -51,17 +51,12 @@ set(
 
 install(DIRECTORY
   launch
-  DESTINATION share/${PROJECT_NAME}/
-)
-install(DIRECTORY
   doc
-  DESTINATION share/${PROJECT_NAME}/
-)
-
-install(DIRECTORY
+  meshes
   config
   DESTINATION share/${PROJECT_NAME}/
 )
+
 
 install(PROGRAMS
   rwa5_2/comp_state.py

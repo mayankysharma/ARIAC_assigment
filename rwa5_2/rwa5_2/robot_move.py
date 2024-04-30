@@ -10,7 +10,8 @@ from robot_commander_msgs.srv import (
     MoveRobotToTable,
     MoveRobotToTray,
     MoveTrayToAGV,
-    PickPart
+    PickPart,
+    PlacePart
 )
 
 def _move_robot_home(self, end_demo=False):
@@ -314,7 +315,7 @@ def _pick_part_done_cb(self, future):
     message = future.message
     if future.success:
         self.get_logger().info(f"✅ {message}")
-        self._moved_tray_to_agv = True
+        self._picked_part = True
     else:
         self.get_logger().fatal(f"💀 {message}")
 
@@ -341,8 +342,9 @@ def _place_part_done_cb(self, future):
         future (Future): A future object
     """
     message = future.message
+    self._placed_part = True 
     if future.success:
         self.get_logger().info(f"✅ {message}")
-        self._moved_tray_to_agv = True
+        
     else:
         self.get_logger().fatal(f"💀 {message}")

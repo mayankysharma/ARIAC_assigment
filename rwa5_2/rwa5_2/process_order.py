@@ -14,13 +14,6 @@ from tf2_ros import TransformException
 
 from ariac_msgs.srv import ChangeGripper
 # Import custom ROS services
-from robot_commander_msgs.srv import (
-    EnterToolChanger,
-    ExitToolChanger,
-    MoveRobotToTable,
-    MoveRobotToTray,
-    MoveTrayToAGV,
-)
 
 import robot_move as RM
 from utils import COLOROFPARTS, TYPEOFPARTS
@@ -185,37 +178,54 @@ class ProcessOrder():
                 types, order = self._order.popleft()
                 self.node.get_logger().info(f"Processing {types}") 
                 if types=="tray":
-
-                    # if self._moved_robot_home:
-                    # if not self._moving_robot_to_table:
-                    RM._move_robot_to_table(self.node,order["kts"])
-                
-                    self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
-                    if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.TRAY_GRIPPER:
-                        self.node.get_logger().info("Moving to gripper change station")                        
-                        RM._enter_tool_changer(self.node, f"kts{order['kts']}", "trays")
-
-                        # if self.node._entered_tool_changer:
-                        #     if not self.node._changing_gripper:
-                        RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
-
-                        RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
-                            
-                    if not self.node.vacuum_gripper_state.enabled:
-                        RM._activate_gripper(self.node)
-                # move to tray
-                    RM._move_robot_to_tray(self.node,order["id"], order["pose"])
-                    # if self.node.vacuum_gripper_state.attached:
-                    RM._move_tray_to_agv(self.node,order["agv_num"])
-                    if self.node._moved_tray_to_agv:
-                        RM._deactivate_gripper(self.node)
                     self.current_order = False
+                    return 
+                #     # if self._moved_robot_home:
+                #     # if not self._moving_robot_to_table:
+                #     RM._move_robot_to_table(self.node,order["kts"])
+                
+                #     self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
+                #     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.TRAY_GRIPPER:
+                #         self.node.get_logger().info("Moving to gripper change station")                        
+                #         RM._enter_tool_changer(self.node, f"kts{order['kts']}", "trays")
+
+                #         # if self.node._entered_tool_changer:
+                #         #     if not self.node._changing_gripper:
+                #         RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
+
+                #         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
+                            
+                #     if not self.node.vacuum_gripper_state.enabled:
+                #         RM._activate_gripper(self.node)
+                # # move to tray
+                #     RM._move_robot_to_tray(self.node,order["id"], order["pose"])
+                #     # if self.node.vacuum_gripper_state.attached:
+                #     RM._move_tray_to_agv(self.node,order["agv_num"])
+                #     if self.node._moved_tray_to_agv:
+                #         RM._deactivate_gripper(self.node)
+                #     self.current_order = False
                     # pass
                 else:
                     self.node.get_logger().info("Picking Order") 
+                    
+                    if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.PART_GRIPPER:
+                        self.node.get_logger().info("Moving to gripper change station")                        
+                    
+                        RM._move_robot_to_table(self.node,order["kts"])
+                        RM._enter_tool_changer(self.node, f"kts{order['kts']}", "parts")
+
+                        # if self.node._entered_tool_changer:
+                        #     if not self.node._changing_gripper:
+                        RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER)
+
+                        RM._exit_tool_changer(self.node,f"kts{order['kts']}", "parts")
+                    if not self.node.vacuum_gripper_state.enabled:
+                        RM._activate_gripper(self.node)
                     RM._pick_part(self.node, order["type"], order["color"], order["pose"])
                     if self.node._picked_part:
                         RM._place_part(self.node, order["agv_num"], order["quadrant"])
+                    if self.node._placed_part:
+                        RM._deactivate_gripper(self.node)
                     self.current_order = False
                 # if order_pick is None:
                 #     current_order = order_place #self._order.popleft()[1]

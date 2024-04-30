@@ -142,7 +142,7 @@ class AriacInterface(Node):
         # client to place part
         # the end effector must be inside the tool changer before calling this service
         self._place_part_cli = self.create_client(
-            PickPart, "/commander/place_part", callback_group = robot_cbg
+            PlacePart, "/commander/place_part", callback_group = robot_cbg
         )
 
         self.create_subscription(
@@ -178,8 +178,9 @@ class AriacInterface(Node):
         # self._activated_gripper = False
         # self._deactivated_gripper = False
         # self._moved_robot_to_tray = False
-        # self._moved_tray_to_agv = False
+        self._moved_tray_to_agv = False
         self._picked_part = False
+        self._placed_part = False
 
 
     def vacuum_gripper_state_cb(self, msg):
