@@ -94,55 +94,55 @@ class AriacInterface(Node):
 
         # client to move the floor robot to the home position
         self._move_robot_home_cli = self.create_client(
-            Trigger, "/commander/move_robot_home", callback_group = robot_cbg
+            Trigger, "/commander/move_robot_home", callback_group = group_reentrant1
         )
 
         # client to move a robot to a table
         self._move_robot_to_table_cli = self.create_client(
-            MoveRobotToTable, "/commander/move_robot_to_table", callback_group = robot_cbg
+            MoveRobotToTable, "/commander/move_robot_to_table", callback_group = group_reentrant1
         )
 
         # client to move a robot to a table
         self._move_robot_to_tray_cli = self.create_client(
-            MoveRobotToTray, "/commander/move_robot_to_tray", callback_group = robot_cbg
+            MoveRobotToTray, "/commander/move_robot_to_tray", callback_group = group_reentrant1
         )
 
         # client to move a tray to an agv
         self._move_tray_to_agv_cli = self.create_client(
-            MoveTrayToAGV, "/commander/move_tray_to_agv", callback_group = robot_cbg
+            MoveTrayToAGV, "/commander/move_tray_to_agv", callback_group = group_reentrant1
         )
 
         # client to move the end effector inside a tool changer
         self._enter_tool_changer_cli = self.create_client(
-            EnterToolChanger, "/commander/enter_tool_changer", callback_group = robot_cbg
+            EnterToolChanger, "/commander/enter_tool_changer", callback_group = group_reentrant1
         )
 
         # client to move the end effector outside a tool changer
         self._exit_tool_changer_cli = self.create_client(
-            ExitToolChanger, "/commander/exit_tool_changer", callback_group = robot_cbg
+            ExitToolChanger, "/commander/exit_tool_changer", callback_group = group_reentrant1
         )
 
         # client to activate/deactivate the vacuum gripper
         self._set_gripper_state_cli = self.create_client(
-            VacuumGripperControl, "/ariac/floor_robot_enable_gripper", callback_group = robot_cbg
+            VacuumGripperControl, "/ariac/floor_robot_enable_gripper", callback_group = group_reentrant1
         )
 
         # client to change the gripper type
         # the end effector must be inside the tool changer before calling this service
         self._change_gripper_cli = self.create_client(
-            ChangeGripper, "/ariac/floor_robot_change_gripper", callback_group = robot_cbg
+            ChangeGripper, "/ariac/floor_robot_change_gripper", callback_group = group_reentrant1
         )
 
         # client to pick part
         # the end effector must be inside the tool changer before calling this service
         self._pick_part_cli = self.create_client(
-            PickPart, "/commander/pick_part", callback_group = robot_cbg
+            PickPart, "/commander/pick_part", callback_group = group_reentrant1
         )
 
         # client to place part
         # the end effector must be inside the tool changer before calling this service
         self._place_part_cli = self.create_client(
-            PlacePart, "/commander/place_part", callback_group = robot_cbg
+            PlacePart, "/commander/place_part", callback_group = group_reentrant1
         )
 
         self.create_subscription(
@@ -150,9 +150,15 @@ class AriacInterface(Node):
             "/ariac/floor_robot_gripper_state",
             self.vacuum_gripper_state_cb,
             10,
-            callback_group=group_mutex1,
+            callback_group=robot_cbg,
         )
         self.vacuum_gripper_state = VacuumGripperStateMsg
+
+        self.agv_tray_lock_cli = {}
+        for num in range(1,5):
+            self.agv_tray_lock_cli[num] = self.create_client(Trigger,f'/ariac/agv{num}_lock_tray',callback_group = group_reentrant1)
+
+
 
         # # The following flags are used to ensure an action is not triggered multiple times
         # self._moving_robot_home = False
@@ -224,7 +230,8 @@ class AriacInterface(Node):
                 # Start processing the order
                 process_order.get_pick_place_position()
                     
-            else:              
+            else: 
+            
                 try:
                     # Start shipping and submitting the order
                     self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
@@ -233,7 +240,7 @@ class AriacInterface(Node):
                     if data is None:
                         self.get_logger().warn("Unable to ship!")
 
-                    while not self.order_submit.Submit_Order(agv_num=data[1],order_id=data[0]): continue
+                    while not self.order_submit.Submit_Order(agv_num=order.order_task.agv_number,order_id=order.order_id): continue
                     self.current_order = self.pending_order
                     if self.pending_order is not None:
                         self.current_order_priority = self.pending_order[2]

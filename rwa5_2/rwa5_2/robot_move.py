@@ -353,3 +353,28 @@ def _place_part_done_cb(self, future):
     else:
         self.get_logger().fatal(f"💀 {message}")
         return False
+
+def agv_tray_locked(self, num):
+        '''
+        Lock the tray of an AGV and parts on the tray. This will prevent tray and parts from moving during transport.
+
+        Args:
+            num (int):  AGV number
+
+        Raises:
+            KeyboardInterrupt: Exception raised when the user presses Ctrl+C
+        '''
+
+        # Build the request
+        request = Trigger.Request()
+        # Send the request
+        future = self.agv_tray_lock_cli[num].call(request)
+
+        # Check the response
+        if future.success:
+            self.get_logger().info(f'AGV{num}\'s tray locked')
+            return
+        else:
+            self.get_logger().warn('Unable to lock tray')
+            raise Exception("Unable to lock the tray")
+        return 

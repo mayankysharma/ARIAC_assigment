@@ -596,35 +596,37 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
 
   double part_rotation = Utils::get_yaw_from_pose(part_pose);
   // Change gripper at location closest to part
-  if (floor_gripper_state_.type != "part_gripper")
-  {
-    std::string station;
-    if (part_pose.position.y < 0)
-    {
-      station = "kts1";
-    }
-    else
-    {
-      station = "kts2";
-    }
+  // if (floor_gripper_state_.type != "part_gripper")
+  // {
+  //   std::string station;
+  //   if (part_pose.position.y < 0)
+  //   {
+  //     station = "kts1";
+  //   }
+  //   else
+  //   {
+  //     station = "kts2";
+  //   }
 
-    // Move floor robot to the corresponding kit tray table
-    if (station == "kts1")
-    {
-      floor_robot_->setJointValueTarget(floor_kts1_js_);
-    }
-    else
-    {
-      floor_robot_->setJointValueTarget(floor_kts2_js_);
-    }
-    move_to_target();
+  //   // Move floor robot to the corresponding kit tray table
+  //   if (station == "kts1")
+  //   {
+  //     floor_robot_->setJointValueTarget(floor_kts1_js_);
+  //   }
+  //   else
+  //   {
+  //     floor_robot_->setJointValueTarget(floor_kts2_js_);
+  //   }
+  //   move_to_target();
 
-    change_gripper(station, "parts");
-  }
+  //   change_gripper(station, "parts");
+  // }
 
   floor_robot_->setJointValueTarget("linear_actuator_joint",
                                    rail_positions_[bin_side]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
+    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+  
   move_to_target();
 
   // wait_for_attach_completion(2.0);
@@ -1424,6 +1426,7 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
       "linear_actuator_joint",
       rail_positions_["agv" + std::to_string(agv_num)]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
+  floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
   move_to_target();
 
   // Determine target pose for part based on agv_tray pose

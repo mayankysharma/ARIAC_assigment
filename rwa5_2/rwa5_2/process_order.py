@@ -178,33 +178,32 @@ class ProcessOrder():
                 types, order = self._order.popleft()
                 self.node.get_logger().info(f"Processing {types}") 
                 if types=="tray":
-                    self.current_order = False
-                    return 
-                #     # if self._moved_robot_home:
-                #     # if not self._moving_robot_to_table:
-                #     RM._move_robot_to_table(self.node,order["kts"])
+                    # self.current_order = False
+                    # return 
+
+                    RM._move_robot_to_table(self.node,order["kts"])
                 
-                #     self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
-                #     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.TRAY_GRIPPER:
-                #         self.node.get_logger().info("Moving to gripper change station")                        
-                #         RM._enter_tool_changer(self.node, f"kts{order['kts']}", "trays")
+                    self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
+                    if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.TRAY_GRIPPER:
+                        self.node.get_logger().info("Moving to gripper change station")                        
+                        RM._enter_tool_changer(self.node, f"kts{order['kts']}", "trays")
 
-                #         # if self.node._entered_tool_changer:
-                #         #     if not self.node._changing_gripper:
-                #         RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
+                        RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
 
-                #         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
+                        RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
                             
-                #     if not self.node.vacuum_gripper_state.enabled:
-                #         RM._activate_gripper(self.node)
-                # # move to tray
-                #     RM._move_robot_to_tray(self.node,order["id"], order["pose"])
-                #     # if self.node.vacuum_gripper_state.attached:
-                #     RM._move_tray_to_agv(self.node,order["agv_num"])
-                #     if self.node._moved_tray_to_agv:
-                #         RM._deactivate_gripper(self.node)
-                #     self.current_order = False
-                    # pass
+                    if not self.node.vacuum_gripper_state.enabled:
+                        RM._activate_gripper(self.node)
+
+                    RM._move_robot_to_tray(self.node,order["id"], order["pose"])
+
+                    RM._move_tray_to_agv(self.node,order["agv_num"])
+                    if self.node._moved_tray_to_agv:
+                        RM._deactivate_gripper(self.node)
+
+                    RM.agv_tray_locked(self.node,order["agv_num"])
+                    self.current_order = False
+
                 else:
                     self.node.get_logger().info("Picking Order") 
                     
@@ -214,8 +213,6 @@ class ProcessOrder():
                         RM._move_robot_to_table(self.node,order["kts"])
                         RM._enter_tool_changer(self.node, f"kts{order['kts']}", "parts")
 
-                        # if self.node._entered_tool_changer:
-                        #     if not self.node._changing_gripper:
                         RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER)
 
                         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "parts")
@@ -225,21 +222,10 @@ class ProcessOrder():
                     RM._pick_part(self.node, order["type"], order["color"], order["pose"])
                     if self.node._picked_part:
                         RM._place_part(self.node, order["agv_num"], order["quadrant"])
-                    if self.node.vacuum_gripper_state.enabled and self.node._deactivating_gripper:
+                    # if self.node.vacuum_gripper_state.enabled and self.node._deactivating_gripper:
                         RM._deactivate_gripper(self.node)
                     self.current_order = False
-                # if order_pick is None:
-                #     current_order = order_place #self._order.popleft()[1]
-                #     # self.finish_1_order = False
-                #     self.order_type="place"
-                # else:
-                #     current_order = order_pick
-                #     self._order.appendleft((None,order_place))
-                # self.node.get_logger().info(f"Request {current_order}")
-                # future = self.node.move_service.call_async(current_order)
-                
-                # future.add_done_callback(partial(self.add_response_callback,info=current_order))  # Add response callback
-                        
+
             else:
                 # do nothing as wait for previous order to process
                 pass
@@ -249,44 +235,6 @@ class ProcessOrder():
 
         return  
     
-    def add_response_callback(self, future, info):
-        """
-        response callback function for handling success and message.
-        """
-        # Check if the future has a result
-        if future.done() and not future.cancelled():
-            result = future.result()
-            # Check if the result is successful
-            if result.success:
-                self.node.get_logger().info(f"Service call successful:{result.message}")
-                # Handle success scenario here
-
-            else:
-                self.node.get_logger().error(f"Service call failed: {result.message}")
-
-                ## Regain the info for use when the order process resumes
-                if info.pick_place==PickPlace.Request().PICK:
-                    pick_o,place_o = self._order.popleft()
-                    self._order.appendleft((pick_o,place_o))
-
-                else:
-                    self._order.appendleft((None,info))
-
-            
-                # Handle failure scenario here
-        else:
-            self.node.get_logger().error(f"Future was cancelled or did not complete successfully")
-            ## Regain the info for use when the order process resumes
-            if info.pick_place==PickPlace.Request().PICK:
-                pick_o,place_o = self._order.popleft()
-                self._order.appendleft((pick_o,place_o))
-
-            else:
-                self._order.appendleft((None,info))
-
-        self._place = False
-        self.current_order= False
-
     @property
     def isOrderProcessed(self) -> bool:
         """
