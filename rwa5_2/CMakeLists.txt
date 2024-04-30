@@ -12,6 +12,15 @@ find_package(ariac_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(orocos_kdl REQUIRED)
+find_package(moveit_msgs REQUIRED)
+
+find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
+find_package(rosidl_default_runtime REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(robot_commander_msgs REQUIRED)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -22,6 +31,23 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+set(
+  ARIAC_INCLUDE_DIRS 
+  rclcpp 
+  std_msgs
+  ariac_msgs
+  tf2_ros
+  geometry_msgs
+  tf2
+  orocos_kdl
+  tf2_ros
+  tf2_geometry_msgs
+  moveit_msgs
+  geometric_shapes
+  moveit_ros_planning_interface
+  
+)
 
 install(DIRECTORY
   launch
@@ -48,6 +74,22 @@ install(PROGRAMS
   rwa5_2/submit_orders.py
   rwa5_2/utils.py
   rwa5_2/sensor_read.py
+  rwa5_2/robot_move.py
   DESTINATION lib/${PROJECT_NAME})
 
+include_directories(${ariac_msgs_INCLUDE_DIRS})
+# # Add include directory for header files
+include_directories(include)
+add_executable(robot_ariac src/robot_ariac.cpp)
+
+# Link dependencies to the executable
+ament_target_dependencies(robot_ariac
+${ARIAC_INCLUDE_DIRS}
+robot_commander_msgs
+)
+
+install(TARGETS
+robot_ariac
+DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()

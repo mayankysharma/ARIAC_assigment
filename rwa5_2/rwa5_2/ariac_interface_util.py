@@ -24,8 +24,19 @@ from ariac_msgs.msg import (
     AdvancedLogicalCameraImage as AdvancedLogicalCameraImageMsg,
     Part as PartMsg,
     PartPose as PartPoseMsg,
+    VacuumGripperState as VacuumGripperStateMsg
 )
 from std_srvs.srv import Trigger
+from ariac_msgs.srv import ChangeGripper, VacuumGripperControl
+
+# Import custom ROS services
+from robot_commander_msgs.srv import (
+    EnterToolChanger,
+    ExitToolChanger,
+    MoveRobotToTable,
+    MoveRobotToTray,
+    MoveTrayToAGV,
+)
 
 from process_order import ProcessOrder
 from sensor_read import SensorRead
@@ -42,8 +53,6 @@ class AriacInterface(Node):
     comp_state_topic_name = "/ariac/competition_state"
     submit_order_service_name = "/ariac/submit_order"
 
-    pause_service_name = "/robot/pause"
-    resume_service_name = "/robot/resume"
 
     def __init__(self, node_name):
         """
@@ -54,11 +63,12 @@ class AriacInterface(Node):
         super().__init__(node_name)
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
+        robot_cbg = ReentrantCallbackGroup()
         self.order_queue = deque()
 
          #Competition State object instance
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
-        self._monitor_state = self.create_timer(1, self.monitor_state_callback)
+        self._monitor_state = self.create_timer(1, self.monitor_state_callback,callback_group=group_mutex1)
         self.order_submit = OrderSubmission(self,AriacInterface.submit_order_service_name,group_reentrant1)
 
         self.ship_order = ShipOrders(self,group_reentrant1)
@@ -66,16 +76,6 @@ class AriacInterface(Node):
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
         self.sensor_read=SensorRead(self,callback_group=group_reentrant1)
         
-        # pause service use for the pausing the robot when recived high priority order
-        self.pause_service = self.create_client(Trigger,
-                                                AriacInterface.pause_service_name,
-                                                callback_group=group_reentrant1)
-
-        # Resume service for the previous order
-        self.resume_service = self.create_client(Trigger,
-                                                AriacInterface.resume_service_name,
-                                                callback_group=group_reentrant1)
-
         self.current_order_priority = False
         self.current_order = None
         self.pending_order = None
@@ -83,6 +83,92 @@ class AriacInterface(Node):
         # Transform listener to get the pose of some frames not predefined
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+
+
+        # client to start the competition
+        self._start_competition_cli = self.create_client(
+            Trigger, "/ariac/start_competition"
+        )
+
+        # client to move the floor robot to the home position
+        self._move_robot_home_cli = self.create_client(
+            Trigger, "/commander/move_robot_home", callback_group = robot_cbg
+        )
+
+        # client to move a robot to a table
+        self._move_robot_to_table_cli = self.create_client(
+            MoveRobotToTable, "/commander/move_robot_to_table", callback_group = robot_cbg
+        )
+
+        # client to move a robot to a table
+        self._move_robot_to_tray_cli = self.create_client(
+            MoveRobotToTray, "/commander/move_robot_to_tray", callback_group = robot_cbg
+        )
+
+        # client to move a tray to an agv
+        self._move_tray_to_agv_cli = self.create_client(
+            MoveTrayToAGV, "/commander/move_tray_to_agv", callback_group = robot_cbg
+        )
+
+        # client to move the end effector inside a tool changer
+        self._enter_tool_changer_cli = self.create_client(
+            EnterToolChanger, "/commander/enter_tool_changer", callback_group = robot_cbg
+        )
+
+        # client to move the end effector outside a tool changer
+        self._exit_tool_changer_cli = self.create_client(
+            ExitToolChanger, "/commander/exit_tool_changer", callback_group = robot_cbg
+        )
+
+        # client to activate/deactivate the vacuum gripper
+        self._set_gripper_state_cli = self.create_client(
+            VacuumGripperControl, "/ariac/floor_robot_enable_gripper", callback_group = robot_cbg
+        )
+
+        # client to change the gripper type
+        # the end effector must be inside the tool changer before calling this service
+        self._change_gripper_cli = self.create_client(
+            ChangeGripper, "/ariac/floor_robot_change_gripper", callback_group = robot_cbg
+        )
+
+        self.create_subscription(
+            VacuumGripperStateMsg,
+            "/ariac/floor_robot_gripper_state",
+            self.vacuum_gripper_state_cb,
+            10,
+            callback_group=group_mutex1,
+        )
+        self.vacuum_gripper_state = VacuumGripperStateMsg
+
+        # The following flags are used to ensure an action is not triggered multiple times
+        self._moving_robot_home = False
+        self._moving_robot_to_table = False
+        self._entering_tool_changer = False
+        self._changing_gripper = False
+        self._exiting_tool_changer = False
+        self._activating_gripper = False
+        self._deactivating_gripper = False
+        self._moving_robot_to_tray = False
+        self._moving_tray_to_agv = False
+        self._ending_demo = False
+
+        # The following flags are used to trigger the next action
+        self._kit_completed = False
+        self._competition_started = False
+        self._competition_state = None
+        self._moved_robot_home = False
+        self._moved_robot_to_table = False
+        self._entered_tool_changer = False
+        self._changed_gripper = False
+        self._exited_tool_changer = False
+        self._activated_gripper = False
+        self._deactivated_gripper = False
+        self._moved_robot_to_tray = False
+        self._moved_tray_to_agv = False
+
+
+    def vacuum_gripper_state_cb(self, msg):
+        self.vacuum_gripper_state = msg
 
     def monitor_state_callback(self):
         """
