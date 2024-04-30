@@ -26,9 +26,9 @@ FloorRobotNode::FloorRobotNode()
    
 
     // Create a service to pause the motion.
-    pause_robot_service_ = create_service<std_srvs::srv::Trigger>(
-        "/robot/pause",
-        std::bind(&FloorRobotNode::pauseRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
+    // pause_robot_service_ = create_service<std_srvs::srv::Trigger>(
+    //     "/robot/pause",
+    //     std::bind(&FloorRobotNode::pauseRobotCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     move_robot_service_ = create_service<PickPlaceSrv>(
         "/robot/move",
@@ -95,6 +95,22 @@ void FloorRobotNode::moveRobotCallback(
         offset = utils::OFFSETS["tray"]; //+ utils::PART_HEIGHTS[request->tray_id];
     } 
 
+    // Check if the Gripper approriate for the task, if not change the gripper
+    
+    if (request->tray_id==-1 && ChangeGripperSrv::Request::PART_GRIPPER!=utils::GRIPPER_TYPE[floor_gripper_state_.type]){
+        //move To Gripper Station
+        moveToGripperStation(request->gripper_station_pose);
+        // its part task, need part gripper
+        changeGripperTool(ChangeGripperSrv::Request::PART_GRIPPER);
+    }
+    if (request->part_type=="" && ChangeGripperSrv::Request::TRAY_GRIPPER!=utils::GRIPPER_TYPE[floor_gripper_state_.type])
+    {
+        //move To Gripper Station
+        moveToGripperStation(request->gripper_station_pose);
+        // its part task, need part gripper
+        changeGripperTool(ChangeGripperSrv::Request::TRAY_GRIPPER);
+    }
+
     // Set the position
     target_pose.position.x = request->destination_pose.position.x; // X coordinate
     target_pose.position.y = request->destination_pose.position.y;    // Y coordinate
@@ -137,6 +153,7 @@ void FloorRobotNode::moveRobotCallback(
             _enable_gripper_service_started = true;
             // auto request_vacuum_gripper = std::make_shared<VacuumGripperControlSrv::Request>();
             if (request->pick_place==PickPlaceSrv::Request::PICK){
+
                   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service Requested for Change Gripper state, enabling.");
                   changeGripperState(true);
                   RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Change Gripper state to enabled");
@@ -181,26 +198,70 @@ void FloorRobotNode::moveRobotCallback(
     }
 }
 
-void FloorRobotNode::pauseRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                       std_srvs::srv::Trigger::Response::SharedPtr response){
-    
-    // Stopping the current execution
-    // if pick action
-    if (pick_place_==1){
-        floor_robot_.stop();
-        response->success=true;
-        response->message = "Stopped the Action";
+
+void FloorRobotNode::moveToGripperStation(geometry_msgs::msg::Pose target_pose){
+
+    target_pose.position.z += 0.1;
+    // Convert roll, pitch, yaw to quaternion
+    double roll = 3.14;   // Roll angle in radians
+    double pitch = 0.00;   // Pitch angle in radians
+    double yaw = 1.57;    // Yaw angle in radians
+
+    tf2::Quaternion orientation;
+    orientation.setRPY(roll, pitch, yaw);
+
+    // Set the orientation
+    target_pose.orientation.x = orientation.x();
+    target_pose.orientation.y = orientation.y();
+    target_pose.orientation.z = orientation.z();
+    target_pose.orientation.w = orientation.w();
+
+    // Set the target pose for the robot
+    floor_robot_.setPoseTarget(target_pose);
+
+    // Plan the trajectory
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    auto success = static_cast<bool>(floor_robot_.plan(plan));
+
+    // Execute the plan
+    if (success)
+    {
+        auto result = floor_robot_.execute(plan);
+        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS)
+        {
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Robot moved successfully");
+        }
+        else
+        {
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Trajectory execution failed with error code: %s",std::to_string(result.val).c_str());
+        }
     }
-    else if(pick_place_==0){
-        response->success=true;
-        response->message = "No Current Action";
+    else
+    {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Unable to generate trajectory");
     }
-    else{
-        response->success=false;
-        response->message = "Can't Stop Place Action";
-    }
-    
 }
+
+// void FloorRobotNode::pauseRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
+//                        std_srvs::srv::Trigger::Response::SharedPtr response){
+    
+//     // Stopping the current execution
+//     // if pick action
+//     if (pick_place_==1){
+//         floor_robot_.stop();
+//         response->success=true;
+//         response->message = "Stopped the Action";
+//     }
+//     else if(pick_place_==0){
+//         response->success=true;
+//         response->message = "No Current Action";
+//     }
+//     else{
+//         response->success=false;
+//         response->message = "Can't Stop Place Action";
+//     }
+    
+// }
                     
 // void FloorRobotNode::resumeRobotCallback(const std_srvs::srv::Trigger::Request::SharedPtr request,
 //                        std_srvs::srv::Trigger::Response::SharedPtr response){
@@ -252,7 +313,8 @@ bool FloorRobotNode::changeGripperState(bool enable){
 */
 bool FloorRobotNode::changeGripperTool(uint8_t gripper_type){
     auto request = std::make_shared<ChangeGripperSrv::Request>();
-
+    
+    request->gripper_type = gripper_type;
     auto future = change_gripper_tool_client_->async_send_request(request);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to get response");
     // result_future.wait();

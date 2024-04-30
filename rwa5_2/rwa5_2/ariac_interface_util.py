@@ -43,8 +43,8 @@ class AriacInterface(Node):
     comp_state_topic_name = "/ariac/competition_state"
     submit_order_service_name = "/ariac/submit_order"
 
-    pause_service_name = "/robot/pause"
-    resume_service_name = "/robot/resume"
+    # pause_service_name = "/robot/pause"
+    # resume_service_name = "/robot/resume"
     move_service_name="/robot/move"
 
     def __init__(self, node_name):
@@ -68,15 +68,15 @@ class AriacInterface(Node):
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
         self.sensor_read=SensorRead(self,callback_group=group_reentrant1)
         
-        # pause service use for the pausing the robot when recived high priority order
-        self.pause_service = self.create_client(Trigger,
-                                                AriacInterface.pause_service_name,
-                                                callback_group=group_reentrant1)
+        # # pause service use for the pausing the robot when recived high priority order
+        # self.pause_service = self.create_client(Trigger,
+        #                                         AriacInterface.pause_service_name,
+        #                                         callback_group=group_reentrant1)
 
-        # Resume service for the previous order
-        self.resume_service = self.create_client(Trigger,
-                                                AriacInterface.resume_service_name,
-                                                callback_group=group_reentrant1)
+        # # Resume service for the previous order
+        # self.resume_service = self.create_client(Trigger,
+        #                                         AriacInterface.resume_service_name,
+        #                                         callback_group=group_reentrant1)
         # Resume service for the previous order
         self.move_service = self.create_client(PickPlace,
                                                 AriacInterface.move_service_name,

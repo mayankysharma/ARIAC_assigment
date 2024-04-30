@@ -81,6 +81,13 @@ private:
     rclcpp::Service<rwa5_2::srv::PickPlace>::SharedPtr move_robot_service_;
     // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_robot_service_;
 
+    // Is it plan for pick and place
+    // pick 1, place 2
+    uint8_t pick_place_ = 0; 
+    // bool place_ = false;
+
+    bool _change_gripper_tool_service_started = false; 
+    bool _enable_gripper_service_started = false;
 
 
     void floor_robot_sub_cb(const std_msgs::msg::String::ConstSharedPtr msg);
@@ -181,13 +188,11 @@ private:
     //-----------------------------//
     void wait_for_attach_completion (double timeout);
 
+    /**
+     * @brief move the floor robot to gripper change station to change the gripper
+     * 
+     * @param target_pose, pose of the gripper station
+     */
+    void moveToGripperStation(geometry_msgs::msg::Pose target_pose);
 
-    // Is it plan for pick and place
-    // pick 1, place 2
-    uint8_t pick_place_ = 0; 
-    // bool place_ = false;
-
-
-    bool _change_gripper_tool_service_started = false; 
-    bool _enable_gripper_service_started = false;
 };

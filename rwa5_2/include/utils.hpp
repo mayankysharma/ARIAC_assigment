@@ -11,6 +11,7 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <kdl/frames.hpp>
 #include <tf2_kdl/tf2_kdl.h>
+#include <ariac_msgs/srv/change_gripper.hpp>
 
 #include <ariac_msgs/msg/part.hpp>
 
@@ -30,6 +31,11 @@ namespace utils{
             { "pump", 0.12 },
             { "regulator", 0.07 },
             { "sensor",0.07}};
+    
+    std::map<std::string, uint8_t> GRIPPER_TYPE = {
+        {"part_gripper",ariac_msgs::srv::ChangeGripper::Request::PART_GRIPPER},
+        {"tray_gripper",ariac_msgs::srv::ChangeGripper::Request::TRAY_GRIPPER},
+    };
     
 }
 class Utils
