@@ -23,6 +23,7 @@ namespace utils{
         {"drop", 0.002},
         {"pick", 0.003},
         {"part", 0.070},
+        {"tool_loc", 0.4}
     };
 
             

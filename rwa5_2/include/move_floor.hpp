@@ -35,6 +35,7 @@
 #include <cmath>
 
 #include "rwa5_2/srv/pick_place.hpp"
+#include "utils.hpp"
 
 using PickPlaceSrv = rwa5_2::srv::PickPlace;
 using ChangeGripperSrv = ariac_msgs::srv::ChangeGripper;
@@ -74,7 +75,6 @@ private:
     rclcpp::Client<ariac_msgs::srv::ChangeGripper>::SharedPtr floor_robot_tool_changer_;
 
 
-
     // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_service_;
     ariac_msgs::msg::VacuumGripperState floor_gripper_state_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr pause_robot_service_;
@@ -86,11 +86,15 @@ private:
     uint8_t pick_place_ = 0; 
     // bool place_ = false;
 
-    bool _change_gripper_tool_service_started = false; 
+    // Check if the service gripper started ?
+    bool _change_gripper_tool_service_started = false;
+    // get the gripper service value to add in change gripper tool
+    uint8_t _change_gripper_tool_service_value = 0;
+
 
     // Check if the service gripper started ?
     bool _enable_gripper_service_started = false;
-    // get the gripper service value to add in change gripper state
+    // get the gripper service value to add in change gripper state vacuum enabled
     bool _enable_gripper_service_value = false;
 
     // Timer 
@@ -199,7 +203,7 @@ private:
      * 
      * @param target_pose, pose of the gripper station
      */
-    void moveToGripperStation(geometry_msgs::msg::Pose target_pose);
+    void moveToGripperStation(geometry_msgs::msg::Pose target_pose, int depth = 1, float offset = utils::OFFSETS["tool_loc"]);
 
     /**
      * @brief run the service according flag, and check after every duration 
