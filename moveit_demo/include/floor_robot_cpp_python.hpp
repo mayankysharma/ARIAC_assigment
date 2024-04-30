@@ -55,8 +55,6 @@
 #include <robot_commander_msgs/srv/move_robot_to_table.hpp>
 #include <robot_commander_msgs/srv/move_robot_to_tray.hpp>
 #include <robot_commander_msgs/srv/move_tray_to_agv.hpp>
-#include <robot_commander_msgs/srv/pick_part.hpp>
-#include <robot_commander_msgs/srv/place_part.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -187,12 +185,6 @@ class FloorRobot : public rclcpp::Node {
   //! Service to move the end effector outside a tool changer
   rclcpp::Service<robot_commander_msgs::srv::ExitToolChanger>::SharedPtr
       exit_tool_changer_srv_;
-//! Service to move the robot very close to a part (just before it is grasped)
-  rclcpp::Service<robot_commander_msgs::srv::PickPart>::SharedPtr
-      pick_part_srv_;
-//! Service to move the robot very close to a part (just before it is grasped)
-  rclcpp::Service<robot_commander_msgs::srv::PlacePart>::SharedPtr
-      place_part_srv_;
 
   /**
    * @brief Callback function for the service /commander/move_robot_home
@@ -324,13 +316,6 @@ class FloorRobot : public rclcpp::Node {
   bool exit_tool_changer(std::string changing_station,
                           std::string gripper_type);
 
-  
-  void pick_part_cb(robot_commander_msgs::srv::PickPart::Request::SharedPtr req,
-                          robot_commander_msgs::srv::PickPart::Response::SharedPtr res);  
-
-        
-  void place_part_in_tray_cb(robot_commander_msgs::srv::PlacePart::Request::SharedPtr req,
-                          robot_commander_msgs::srv::PlacePart::Response::SharedPtr res);  
   //=========== END PYTHON - C++ ===========//
 
   /**

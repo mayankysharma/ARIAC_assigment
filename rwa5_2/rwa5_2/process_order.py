@@ -183,8 +183,9 @@ class ProcessOrder():
                 self.node.get_logger().info(f"Processing the order {self._order_id}!!")
                 self.current_order = True
                 types, order = self._order.popleft()
-                
+                self.node.get_logger().info(f"Processing {types}") 
                 if types=="tray":
+
                     # if self._moved_robot_home:
                     # if not self._moving_robot_to_table:
                     RM._move_robot_to_table(self.node,order["kts"])
@@ -199,16 +200,23 @@ class ProcessOrder():
                         RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
 
                         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
-                                
-                        if not self.node.vacuum_gripper_state.enabled:
-                            RM._activate_gripper(self.node)
-                    # move to tray
-                        RM._move_robot_to_tray(self.node,order["id"], order["pose"])
-                        # if self.node.vacuum_gripper_state.attached:
-                        RM._move_tray_to_agv(self.node,order["agv_num"])
-                        if self.node._moved_tray_to_agv:
-                            RM._deactivate_gripper(self.node)
-
+                            
+                    if not self.node.vacuum_gripper_state.enabled:
+                        RM._activate_gripper(self.node)
+                # move to tray
+                    RM._move_robot_to_tray(self.node,order["id"], order["pose"])
+                    # if self.node.vacuum_gripper_state.attached:
+                    RM._move_tray_to_agv(self.node,order["agv_num"])
+                    if self.node._moved_tray_to_agv:
+                        RM._deactivate_gripper(self.node)
+                    self.current_order = False
+                    # pass
+                else:
+                    self.node.get_logger().info("Picking Order") 
+                    RM._pick_part(self.node, order["type"], order["color"], order["pose"])
+                    if self.node._picked_part:
+                        RM._place_part(self.node, order["agv_num"], order["quadrant"])
+                    self.current_order = False
                 # if order_pick is None:
                 #     current_order = order_place #self._order.popleft()[1]
                 #     # self.finish_1_order = False
@@ -281,17 +289,19 @@ class ProcessOrder():
         Pause the process, service call to moveit, to pause
         """
         try:
-            self.node.get_logger().info("Pausing the order.")
-            if self.order_type=="pick":
-                self.node.get_logger().info("Currently picking the order")
-                while self.current_order:
-                    continue
-                self.node.get_logger().info("Start placing the Order.")
-                self.get_pick_place_position()
+            if self.current_order == False:
+                return True
+            # self.node.get_logger().info("Pausing the order.")
+            # if self.order_type=="pick":
+            #     self.node.get_logger().info("Currently picking the order")
+            #     while self.current_order:
+            #         continue
+            #     self.node.get_logger().info("Start placing the Order.")
+            #     self.get_pick_place_position()
 
-            while self.current_order and self.order_type=="place":
-                continue
-            self.node.get_logger().info("Completed 1 order. Now pausing!!")
+            # while self.current_order and self.order_type=="place":
+            #     continue
+            # self.node.get_logger().info("Completed 1 order. Now pausing!!")
         except Exception as e:
             self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
             return False

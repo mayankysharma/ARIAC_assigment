@@ -1,0 +1,8 @@
+
+uint32 part_type
+uint32 part_color
+string bin_side
+geometry_msgs/Pose part_pose_in_world
+---
+bool success
+string message

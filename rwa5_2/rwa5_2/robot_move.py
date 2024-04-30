@@ -10,6 +10,7 @@ from robot_commander_msgs.srv import (
     MoveRobotToTable,
     MoveRobotToTray,
     MoveTrayToAGV,
+    PickPart
 )
 
 def _move_robot_home(self, end_demo=False):
@@ -274,6 +275,65 @@ def _move_tray_to_agv(self, agv_number):
     _move_tray_to_agv_done_cb(self,future)
 
 def _move_tray_to_agv_done_cb(self, future):
+    """
+    Client callback for the service /commander/move_tray_to_agv
+
+    Args:
+        future (Future): A future object
+    """
+    message = future.message
+    if future.success:
+        self.get_logger().info(f"✅ {message}")
+        self._moved_tray_to_agv = True
+    else:
+        self.get_logger().fatal(f"💀 {message}")
+
+# @brief Move the floor robot to its home position
+def _pick_part(self, part_type, part_color, part_pose):
+    
+    self.get_logger().info("👉 Picking Part...")
+    # self._moving_tray_to_agv = True
+
+    while not self._pick_part_cli.wait_for_service(timeout_sec=1.0):
+        self.get_logger().info("Service not available, waiting...")
+
+    request = PickPart.Request()
+    request.part_type = part_type
+    request.part_color = part_color
+    request.part_pose_in_world = part_pose
+    future = self._pick_part_cli.call(request)
+    _pick_part_done_cb(self,future)
+
+def _pick_part_done_cb(self, future):
+    """
+    Client callback for the service /commander/move_tray_to_agv
+
+    Args:
+        future (Future): A future object
+    """
+    message = future.message
+    if future.success:
+        self.get_logger().info(f"✅ {message}")
+        self._moved_tray_to_agv = True
+    else:
+        self.get_logger().fatal(f"💀 {message}")
+
+# @brief Move the floor robot to its home position
+def _place_part(self, agv_num, quadrant):
+    
+    self.get_logger().info("👉 Placing Part...")
+    # self._moving_tray_to_agv = True
+
+    while not self._place_part_cli.wait_for_service(timeout_sec=1.0):
+        self.get_logger().info("Service not available, waiting...")
+
+    request = PlacePart.Request()
+    request.agv_num = agv_num
+    request.quadrant = quadrant
+    future = self._place_part_cli.call(request)
+    _pick_part_done_cb(self,future)
+
+def _place_part_done_cb(self, future):
     """
     Client callback for the service /commander/move_tray_to_agv
 

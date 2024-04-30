@@ -17,6 +17,8 @@ set(srv_files
   "srv/MoveRobotToTray.srv"
   "srv/EnterToolChanger.srv"
   "srv/ExitToolChanger.srv"
+  "srv/PickPart.srv"
+  "srv/PlacePart.srv"
 )
 
 
