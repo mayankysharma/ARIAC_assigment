@@ -14,6 +14,12 @@ FloorRobotNode::FloorRobotNode()
       floor_robot_(std::shared_ptr<rclcpp::Node>(std::move(this)), "floor_robot"), planning_scene_()
 {
 
+    // auto sim_time = std::make_shared<rclcpp::Parameter::Parameter<bool>>("use_sim_time", true);
+    // std::vector<rclcpp::parameter::ParameterVariant> parameters;
+    // parameters.push_back(sim_time);
+
+    // this->set_parameters(parameters);
+
     floor_robot_.setMaxAccelerationScalingFactor(1.0);
     floor_robot_.setMaxVelocityScalingFactor(1.0);
     floor_robot_.setPlanningTime(10.0);
@@ -267,7 +273,7 @@ void FloorRobotNode::moveToGripperStation(geometry_msgs::msg::Pose target_pose, 
     target_pose.orientation.z = orientation.z();
     target_pose.orientation.w = orientation.w();
 
-    // Set the target pose for the robot
+    // // Set the target pose for the robot
     floor_robot_.setPoseTarget(target_pose);
 
     // Plan the trajectory
@@ -291,16 +297,19 @@ void FloorRobotNode::moveToGripperStation(geometry_msgs::msg::Pose target_pose, 
     {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Unable to generate trajectory");
     }
-    // moveToGripperStation(target_pose,depth+1,-offset);
-    std::vector<geometry_msgs::msg::Pose> waypoints;
-     geometry_msgs::msg::Quaternion q;
-    //  q.x = target_pose.orientation.x;
-  waypoints.push_back(Utils::build_pose(
-      target_pose.position.x, target_pose.position.y, target_pose.position.z,target_pose.orientation));
+    moveToGripperStation(target_pose,depth+1,-offset);
 
-  waypoints.push_back(target_pose);
+//     std::vector<geometry_msgs::msg::Pose> waypoints;
+//     //  q.x = target_pose.orientation.x;
+//     // waypoints.push_back(target_pose);
+//     for(float i=0;i<offset;i+=0.01){waypoints.push_back(Utils::build_pose(
+//       target_pose.position.x, target_pose.position.y, target_pose.position.z-i,target_pose.orientation));
+//       }
+  
 
-  if (!move_through_waypoints(waypoints, 0.2, 0.1))RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Error Following trajectory");
+  
+//   if (!move_through_waypoints(waypoints, 0.2, 0.1))RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Error Following trajectory");
+
 }
 
 
@@ -346,6 +355,7 @@ bool FloorRobotNode::changeGripperState(bool enable){
   }
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "changeState - func - Vacuum Enabled");
   return true;
+  _enable_gripper_service_started = false;
 }
 /**
  * This function is used to change the gripper type
@@ -366,6 +376,7 @@ bool FloorRobotNode::changeGripperTool(uint8_t gripper_type){
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Error : %s",response->message.c_str());
     _change_gripper_tool_service_started = false;
     return false;
+    _change_gripper_tool_service_started = false;
 }
 
 //=============================================//
@@ -553,7 +564,7 @@ bool FloorRobotNode::move_through_waypoints(
 {
   moveit_msgs::msg::RobotTrajectory trajectory;
 
-  double path_fraction = floor_robot_.computeCartesianPath(waypoints, 0.01, 0.001, trajectory);
+  double path_fraction = floor_robot_.computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
 
   if (path_fraction < 0.9)
   {
@@ -576,12 +587,12 @@ void FloorRobotNode::serviceTimerCallback(){
     try{
         if (_enable_gripper_service_started){
             changeGripperState(_enable_gripper_service_value);
-            _enable_gripper_service_started = false;
+            
         }
         if (_change_gripper_tool_service_started){
             auto val = changeGripperTool(_change_gripper_tool_service_value);
             RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully tool changed :  %d",val);
-            _change_gripper_tool_service_started = false;
+            
         }
     }
     catch(std::exception &ex){

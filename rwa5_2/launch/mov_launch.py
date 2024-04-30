@@ -20,7 +20,7 @@ def launch_setup(context, *args, **kwargs):
         package="rwa5_2",
         executable="floor_robot",
         output="screen",
-        parameters=generate_parameters(),
+        parameters=generate_parameters()+[{"use_sim_time":True}],
     )
 
     # start_rviz = LaunchConfiguration("rviz")
