@@ -227,7 +227,9 @@ def _deactivate_gripper_done_cb(self, future):
     """
     if future.success:
         self.get_logger().info("✅ Gripper deactivated")
-        self._deactivated_gripper = True
+        # self._deactivated_gripper = True
+        self._picked_part = False
+        self._deactivating_gripper = False
     else:
         self.get_logger().fatal("💀 Gripper not deactivated")
 
@@ -316,9 +318,10 @@ def _pick_part_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._picked_part = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
-
+        return False
 # @brief Move the floor robot to its home position
 def _place_part(self, agv_num, quadrant):
     
@@ -332,7 +335,7 @@ def _place_part(self, agv_num, quadrant):
     request.agv_num = agv_num
     request.quadrant = quadrant
     future = self._place_part_cli.call(request)
-    _pick_part_done_cb(self,future)
+    return _pick_part_done_cb(self,future)
 
 def _place_part_done_cb(self, future):
     """
@@ -345,6 +348,8 @@ def _place_part_done_cb(self, future):
     self._placed_part = True 
     if future.success:
         self.get_logger().info(f"✅ {message}")
-        
+        self._deactivating_gripper = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False

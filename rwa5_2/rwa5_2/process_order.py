@@ -221,10 +221,11 @@ class ProcessOrder():
                         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "parts")
                     if not self.node.vacuum_gripper_state.enabled:
                         RM._activate_gripper(self.node)
+                    
                     RM._pick_part(self.node, order["type"], order["color"], order["pose"])
                     if self.node._picked_part:
                         RM._place_part(self.node, order["agv_num"], order["quadrant"])
-                    if self.node._placed_part:
+                    if self.node.vacuum_gripper_state.enabled and self.node._deactivating_gripper:
                         RM._deactivate_gripper(self.node)
                     self.current_order = False
                 # if order_pick is None:
@@ -299,8 +300,10 @@ class ProcessOrder():
         Pause the process, service call to moveit, to pause
         """
         try:
-            if self.current_order == False:
-                return True
+            #  self.current_order == False:
+            #     return True
+            while self.current_order: continue
+            return True
             # self.node.get_logger().info("Pausing the order.")
             # if self.order_type=="pick":
             #     self.node.get_logger().info("Currently picking the order")

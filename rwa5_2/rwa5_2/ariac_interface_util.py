@@ -161,7 +161,7 @@ class AriacInterface(Node):
         # self._changing_gripper = False
         # self._exiting_tool_changer = False
         # self._activating_gripper = False
-        # self._deactivating_gripper = False
+        self._deactivating_gripper = False
         # self._moving_robot_to_tray = False
         # self._moving_tray_to_agv = False
         # self._ending_demo = False
@@ -181,6 +181,7 @@ class AriacInterface(Node):
         self._moved_tray_to_agv = False
         self._picked_part = False
         self._placed_part = False
+        self._pick_part = False
 
 
     def vacuum_gripper_state_cb(self, msg):

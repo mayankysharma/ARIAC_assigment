@@ -174,6 +174,7 @@ FloorRobot::FloorRobot()
   
   // add models to the planning scene
   add_models_to_planning_scene();
+
   executor_->add_node(node_);
   executor_thread_ = std::thread([this]()
                                  { this->executor_->spin(); });
@@ -622,10 +623,12 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
   }
 
   floor_robot_->setJointValueTarget("linear_actuator_joint",
-                                   rail_positions_[req->bin_side]);
+                                   rail_positions_[bin_side]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
   move_to_target();
 
+  // wait_for_attach_completion(2.0);
+  
   // double part_rotation = Utils::get_yaw_from_pose(part_pose);
   std::vector<geometry_msgs::msg::Pose> waypoints;
   waypoints.push_back(Utils::build_pose(
@@ -637,36 +640,57 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
       part_pose.position.z + part_heights_[req->part_type] + pick_offset_,
       set_robot_orientation(part_rotation)));
 
-  move_through_waypoints(waypoints, 0.3, 0.3);
+  if (!move_through_waypoints(waypoints, 0.3, 0.2))
+  {
+    RCLCPP_ERROR(get_logger(), "Not able to get to part");
+    res->success = false;
+    res->message = "Not able to get to part";
+    return;
+  }
 
   // set_gripper_state(true);
-  RCLCPP_INFO(get_logger(), "Attached Part waiting for 3 sec");
-  wait_for_attach_completion(3.0);
+  // RCLCPP_INFO(get_logger(), "Attached Part waiting for 3 sec");
+  wait_for_attach_completion(5.0);
   
-    RCLCPP_INFO(get_logger(), "Attaching!!");
-  // Add part to planning scene
-  std::string part_name =
-      part_colors_[part_color] + "_" + part_types_[part_type];
-  add_single_model_to_planning_scene(
-      part_name, part_types_[part_type] + ".stl", part_pose);
-  floor_robot_->attachObject(part_name);
-  // floor_robot_attached_part_ = part_to_pick;
 
-  // Move up slightly
-  waypoints.clear();
-  waypoints.push_back(
-      Utils::build_pose(part_pose.position.x, part_pose.position.y,
-                        part_pose.position.z + 0.3, set_robot_orientation(0)));
+    // RCLCPP_INFO(get_logger(), "Attaching!!");
+   if (floor_gripper_state_.attached)
+  {
+    // Add part to planning scene
+    std::string part_name =
+        part_colors_[part_color] + "_" + part_types_[part_type];
+    add_single_model_to_planning_scene(
+        part_name, part_types_[part_type] + ".stl", part_pose);
+    floor_robot_->attachObject(part_name);
+    floor_robot_attached_part_.type = part_type;
 
-    RCLCPP_INFO(get_logger(), "Moving up slightly");
-  move_through_waypoints(waypoints, 0.3, 0.3);
-  
-  res->success = true;
-  res->message = "Part Picked";
-  RCLCPP_INFO(get_logger(), "Successfully Picked Part!!");
+    // Move up slightly
+    waypoints.clear();
+    waypoints.push_back(
+        Utils::build_pose(part_pose.position.x, part_pose.position.y,
+                          part_pose.position.z + 0.3, set_robot_orientation(0)));
 
+      RCLCPP_INFO(get_logger(), "Moving up slightly");
+    if (!move_through_waypoints(waypoints, 0.2, 0.2))
+  {
+    RCLCPP_ERROR(get_logger(), "Not able to get to above the part");
+    res->success = false;
+    res->message = "Not able to get to above the part";
+    return;
+  }
+    
+    res->success = true;
+    res->message = "Part Picked";
+    RCLCPP_INFO(get_logger(), "Successfully Picked Part!!");
+    return;
+  }
+  res->success = false;
+  res->message = "Not able to Part Picked";
+    
   // return true;
 }
+
+
 
 void FloorRobot::place_part_in_tray_cb(robot_commander_msgs::srv::PlacePart::Request::SharedPtr req,
                           robot_commander_msgs::srv::PlacePart::Response::SharedPtr res){
@@ -846,7 +870,7 @@ void FloorRobot::add_single_model_to_planning_scene(
   shapes::ShapeMsg mesh_msg;
 
   std::string package_share_directory =
-      ament_index_cpp::get_package_share_directory("moveit_demo");
+      ament_index_cpp::get_package_share_directory("rwa5_2");
   std::stringstream path;
   path << "file://" << package_share_directory << "/meshes/" << mesh_file;
   std::string model_path = path.str();
@@ -1363,7 +1387,7 @@ bool FloorRobot::pick_bin_part(ariac_msgs::msg::Part part_to_pick)
 
   move_through_waypoints(waypoints, 0.3, 0.3);
 
-  set_gripper_state(true);
+  // set_gripper_state(true);
 
   wait_for_attach_completion(3.0);
 
@@ -1424,7 +1448,13 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
           part_heights_[floor_robot_attached_part_.type] + drop_height_,
       set_robot_orientation(0)));
 
-  move_through_waypoints(waypoints, 0.3, 0.3);
+  
+  if (!move_through_waypoints(waypoints, 0.4, 0.2))
+  {
+    RCLCPP_ERROR(get_logger(), "Not able to place part");
+   
+    return false;
+  }
 
   // Drop part in quadrant
   // set_gripper_state(false);
