@@ -103,7 +103,7 @@ class ProcessOrder():
             tray_info.update({"agv_tray_pose" : agv_tray_loc})
 
    
-            # self._order.appendleft((self._getTrayOrder(tray_info,"pick"),self._getTrayOrder(tray_info,"place")))
+            self._order.appendleft((self._getTrayOrder(tray_info,"pick"),self._getTrayOrder(tray_info,"place")))
 
         except Exception as e:
             self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))

@@ -87,8 +87,14 @@ private:
     // bool place_ = false;
 
     bool _change_gripper_tool_service_started = false; 
-    bool _enable_gripper_service_started = false;
 
+    // Check if the service gripper started ?
+    bool _enable_gripper_service_started = false;
+    // get the gripper service value to add in change gripper state
+    bool _enable_gripper_service_value = false;
+
+    // Timer 
+    rclcpp::TimerBase::SharedPtr timer_;
 
     void floor_robot_sub_cb(const std_msgs::msg::String::ConstSharedPtr msg);
     // Callback function for gripper state subscriber
@@ -194,5 +200,12 @@ private:
      * @param target_pose, pose of the gripper station
      */
     void moveToGripperStation(geometry_msgs::msg::Pose target_pose);
+
+    /**
+     * @brief run the service according flag, and check after every duration 
+     * if need to run the service or not.
+     * 
+     */
+    void serviceTimerCallback();
 
 };

@@ -68,6 +68,10 @@ FloorRobotNode::FloorRobotNode()
     RCLCPP_INFO(this->get_logger(), "Initialization of planning scene successful.");
 ////------////
 
+    // Services timers to check after fix duration to call any service or not
+    timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(50), std::bind(&FloorRobotNode::serviceTimerCallback, this));
+
 
 }
 // // Destructor for the FloorRobot class
@@ -150,13 +154,16 @@ void FloorRobotNode::moveRobotCallback(
             response->message = "Robot moved successfully";
 
             RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Robot move successful");
-            _enable_gripper_service_started = true;
+            
             // auto request_vacuum_gripper = std::make_shared<VacuumGripperControlSrv::Request>();
             if (request->pick_place==PickPlaceSrv::Request::PICK){
 
                   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service Requested for Change Gripper state, enabling.");
-                  changeGripperState(true);
+                  _enable_gripper_service_started = true;
+                  _enable_gripper_service_value = true;
+                  while (!_enable_gripper_service_started){}
                   RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Change Gripper state to enabled");
+                 
                   geometry_msgs::msg::Pose object_pose = request->destination_pose;
                   std::string object_file = ""; 
                   std::string object_name = "";
@@ -171,10 +178,28 @@ void FloorRobotNode::moveRobotCallback(
                     RCLCPP_INFO(get_logger(), "object_name : %s, object_file : %s",object_name.c_str(),object_file.c_str());
                     add_single_model_to_planning_scene( object_name, object_file, object_pose);
                     floor_robot_.attachObject(object_name);
+                    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Attached Object, %s",object_name.c_str());
                   }
              else {
-                changeGripperState(false);
+                // changeGripperState(false);
+                _enable_gripper_service_started = true;
+                _enable_gripper_service_value = false;
+                while (!_enable_gripper_service_started){}
+                std::string object_file = ""; 
+                std::string object_name = "";
+                if (request->tray_id==-1){
+                    object_name = request->part_color + std::string("_") + request->part_type;
+                    object_file = request->part_type + ".stl";
+                }
+                else{
+                    object_name = "kit_tray_" + request->tray_id;
+                    object_file = "kit_tray.stl";
+                }
+                RCLCPP_INFO(get_logger(), "object_name : %s, object_file : %s",object_name.c_str(),object_file.c_str());
                 // Drop object
+                floor_robot_.detachObject(object_name);
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Detached Object, %s",object_name.c_str());
+
              }
 
             
@@ -287,9 +312,9 @@ bool FloorRobotNode::changeGripperState(bool enable){
   if (floor_gripper_state_.enabled == enable)
   {
     if (floor_gripper_state_.enabled)
-      RCLCPP_INFO(get_logger(), "Already enabled");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Already enabled");
     else
-      RCLCPP_INFO(get_logger(), "Already disabled");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Already disabled");
 
     return false;
   }
@@ -303,9 +328,10 @@ bool FloorRobotNode::changeGripperState(bool enable){
 
   if (!result.get()->success)
   {
-    RCLCPP_ERROR(get_logger(), "Error calling gripper enable service");
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Error calling gripper enable service");
     return false;
   }
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "changeState - func - Vacuum Enabled");
   return true;
 }
 /**
@@ -551,6 +577,13 @@ void FloorRobotNode::wait_for_attach_completion(double timeout)
       return;
     }
   }
+}
+
+void FloorRobotNode::serviceTimerCallback(){
+    if (_enable_gripper_service_started){
+        changeGripperState(_enable_gripper_service_value);
+        _enable_gripper_service_started = false;
+    }
 }
 ///
 

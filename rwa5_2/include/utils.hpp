@@ -27,7 +27,7 @@ namespace utils{
 
             
     std::map<std::string, double> PART_HEIGHTS
-        = { { "battery", 0.04 },
+        = { { "battery", -0.029 },
             { "pump", 0.12 },
             { "regulator", 0.07 },
             { "sensor",0.07}};
