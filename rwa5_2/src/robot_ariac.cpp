@@ -1,6 +1,15 @@
 #include "robot_ariac.hpp"
 #include "utils.hpp"
 
+/**
+ * @brief Constructor for the FloorRobot class.
+ * 
+ * This constructor initializes the FloorRobot object and sets up the necessary components.
+ * It creates a Node with the name "floor_robot_demo_cpp_python" and a MoveGroupInterface for the floor_robot.
+ * It also sets up various subscriptions, clients, and services for communication with other nodes.
+ * Additionally, it configures the planning parameters for the floor_robot.
+ * Finally, it adds models to the planning scene and starts the executor thread.
+ */
 FloorRobot::FloorRobot()
     : Node("floor_robot_demo_cpp_python"),
       node_(std::make_shared<rclcpp::Node>("example_group_node")),

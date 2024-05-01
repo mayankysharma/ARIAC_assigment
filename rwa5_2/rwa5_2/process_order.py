@@ -43,6 +43,10 @@ class ProcessOrder():
         """
         Contain the order information from sensor to pass it to the robot
         such as pick position and place position of the tray or part
+
+        Args:
+            order_id (int): The ID of the order.
+            node: The node object used for communication and logging.
         """
         self._order_id = order_id
         self.node = node
@@ -65,8 +69,6 @@ class ProcessOrder():
         # Check if the order is finish
         self.order_type = "pick"
 
-
-
     @property
     def recievedOrder(self):
         """
@@ -80,11 +82,13 @@ class ProcessOrder():
         first will be always be tray pick and place,
         then parts.
         
-        Arguments:
-            1. tray_info, name, pick position
-            2. parts_info : [name,quadrant,pick position]
+        Args:
+            tray_info (dict): Information about the tray, including name and pick position.
+            parts_info (list): List of dictionaries containing information about the parts, including name, quadrant, and pick position.
+        
+        Returns:
+            bool: True if the order information is successfully received.
         """
-
         self._parts_info = {}
         self._tray_info = {}
         try:
@@ -113,7 +117,6 @@ class ProcessOrder():
                 raise Exception("Issue with the agv tray location")
             tray_info.update({"agv_tray_pose" : agv_tray_loc})
 
-   
             self._order.appendleft(("tray",tray_info))
 
         except Exception as e:
@@ -121,51 +124,6 @@ class ProcessOrder():
 
         self._recievedOrder = True
         return True
-
-    # def _getPartOrder(self, part_info, types):
-    #     request = 
-    #     if types=="pick":
-    #         request.tray_id = -1
-    #         request.part_type =  TYPEOFPARTS[part_info["type"]]
-    #         request.part_color = COLOROFPARTS[part_info["color"]]
-    #         request.destination_pose = part_info["pose"]
-    #         request.gripper_station_pose = self._parts_info["gripper_station_pose"]
-    #         request.pick_place = PickPlace.Request().PICK
-
-    #     else:
-
-    #         request.tray_id = -1
-    #         request.part_type = TYPEOFPARTS[part_info["type"]]
-    #         request.part_color = COLOROFPARTS[part_info["color"]]
-
-    #         quadrant = part_info["quadrant"]
-    #         relative_pose = FixQuadrantPositionsRelativeTray[quadrant]
-
-    #         request.destination_pose = Pose()
-    #         request.destination_pose.position.x = self._parts_info["agv_tray_pose"].position.x + relative_pose[0]
-    #         request.destination_pose.position.y = self._parts_info["agv_tray_pose"].position.y + relative_pose[1]
-            
-    #         request.gripper_station_pose = self._parts_info["gripper_station_pose"]
-    #         request.pick_place = PickPlace.Request().PLACE
-
-    #     return request
-                
-    # def _getTrayOrder(self, tray_info, types):
-    #     request = PickPlace.Request()
-    #     request.tray_id = tray_info["id"]
-    #     request.part_type = ""
-    #     if types=="pick":
-    #         request.destination_pose = tray_info["pose"]
-    #         request.gripper_station_pose = tray_info["gripper_station_pose"]
-    #         request.pick_place = PickPlace.Request().PICK
-            
-    #     else:
-    #         request.destination_pose = tray_info["agv_tray_pose"]
-    #         request.gripper_station_pose = tray_info["gripper_station_pose"]
-    #         request.pick_place = PickPlace.Request().PLACE
-
-    #     return request
-
 
     def get_pick_place_position(self):
         """
@@ -265,6 +223,7 @@ class ProcessOrder():
             #     continue
             # self.node.get_logger().info("Completed 1 order. Now pausing!!")
         except Exception as e:
+            ...
             self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
             return False
 
