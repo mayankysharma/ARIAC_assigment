@@ -678,7 +678,7 @@ class FloorRobot : public rclcpp::Node {
   //! Mapping between part type constants and part heights
   std::map<int, double> part_heights_ = {
       {ariac_msgs::msg::Part::BATTERY, 0.04},
-      {ariac_msgs::msg::Part::PUMP, 0.12},
+      {ariac_msgs::msg::Part::PUMP, 0.15},
       {ariac_msgs::msg::Part::REGULATOR, 0.07},
       {ariac_msgs::msg::Part::SENSOR, 0.07}};
   //! Mapping between quadrant type constants and offsets from the center of the

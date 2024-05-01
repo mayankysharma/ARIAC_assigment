@@ -219,7 +219,7 @@ class AriacInterface(Node):
             if not process_order.recievedOrder:
                 # if not recieved the order details from sensor, then fetch it.
                 try:
-                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=False)
+                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=True)
                     # self.get_logger().info(f"tray info from sensor : {tray_info}")
                     # self.get_logger().info(f"part info from sensor : {parts_info}")
                     process_order.getOrder(tray_info=tray_info, parts_info=parts_info)

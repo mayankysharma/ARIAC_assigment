@@ -216,8 +216,8 @@ class ProcessOrder():
                         RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER)
 
                         RM._exit_tool_changer(self.node,f"kts{order['kts']}", "parts")
-                    if not self.node.vacuum_gripper_state.enabled:
-                        RM._activate_gripper(self.node)
+                    # if not self.node.vacuum_gripper_state.enabled:
+                    RM._activate_gripper(self.node)
                     
                     RM._pick_part(self.node, order["type"], order["color"], order["pose"])
                     if self.node._picked_part:
@@ -240,6 +240,7 @@ class ProcessOrder():
         """
         Return True if all the parts and tray are been put in place as given by order
         """
+        self.node.get_logger().info(f"Order Processed : {len(self._order)==0}")
 
         return len(self._order)==0
     

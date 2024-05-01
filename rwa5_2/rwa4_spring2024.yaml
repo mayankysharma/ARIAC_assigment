@@ -15,7 +15,7 @@ parts:
       - type: 'sensor'
         color: 'green'
         slots: [3, 7]
-      - type: 'battery'
+      - type: 'sensor'
         color: 'orange'
         slots: [1, 9]
     bin6:
@@ -23,7 +23,7 @@ parts:
         color: 'purple'
         slots: [2, 4]
     bin8:
-      - type: 'battery'
+      - type: 'sensor'
         color: 'purple'
         slots: [1, 9]
   
@@ -39,12 +39,13 @@ orders:
       tray_id: 1
       destination: 'warehouse'
       products:
-        - type: 'battery'
-          color: 'orange'
-          quadrant: 2
         - type: 'sensor'
           color: 'green'
           quadrant: 1
+        - type: 'sensor'
+          color: 'orange'
+          quadrant: 2
+
   - id: 'KITTING02'
     type: 'kitting'
     announcement:
@@ -58,7 +59,7 @@ orders:
         - type: 'sensor'
           color: 'green'
           quadrant: 2
-        - type: 'battery'
+        - type: 'sensor'
           color: 'orange'
           quadrant: 3
   - id: 'KITTING03'
@@ -72,10 +73,10 @@ orders:
       tray_id: 2
       destination: 'warehouse'
       products:
-        - type: 'battery'
+        - type: 'senspr'
           color: 'purple'
           quadrant: 1
-        - type: 'battery'
+        - type: 'sensor'
           color: 'purple'
           quadrant: 2
         - type: 'sensor'

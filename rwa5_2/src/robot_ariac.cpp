@@ -567,7 +567,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
     if (part.part.type == part_type &&
         part.part.color == part_color)
     {
-      // part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
+      part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
       found_part = true;
       bin_side = "left_bins";
       break;
@@ -581,7 +581,7 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
       if (part.part.type == part_type &&
           part.part.color == part_color)
       {
-        // part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
+        part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
         found_part = true;
         bin_side = "right_bins";
         break;
@@ -667,19 +667,19 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
     floor_robot_attached_part_.type = part_type;
 
     // Move up slightly
-    waypoints.clear();
-    waypoints.push_back(
-        Utils::build_pose(part_pose.position.x, part_pose.position.y,
-                          part_pose.position.z + 0.3, set_robot_orientation(0)));
+  //   waypoints.clear();
+  //   waypoints.push_back(
+  //       Utils::build_pose(part_pose.position.x, part_pose.position.y,
+  //                         part_pose.position.z + 0.3, set_robot_orientation(0)));
 
-      RCLCPP_INFO(get_logger(), "Moving up slightly");
-    if (!move_through_waypoints(waypoints, 0.2, 0.2))
-  {
-    RCLCPP_ERROR(get_logger(), "Not able to get to above the part");
-    res->success = false;
-    res->message = "Not able to get to above the part";
-    return;
-  }
+  //     RCLCPP_INFO(get_logger(), "Moving up slightly");
+  //   if (!move_through_waypoints(waypoints, 0.2, 0.2))
+  // {
+  //   RCLCPP_ERROR(get_logger(), "Not able to get to above the part");
+  //   res->success = false;
+  //   res->message = "Not able to get to above the part";
+  //   return;
+  // }
     
     res->success = true;
     res->message = "Part Picked";
@@ -1448,7 +1448,7 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
   waypoints.push_back(Utils::build_pose(
       part_drop_pose.position.x, part_drop_pose.position.y,
       part_drop_pose.position.z +
-          part_heights_[floor_robot_attached_part_.type] + drop_height_,
+          part_heights_[floor_robot_attached_part_.type] + drop_height_ + kit_tray_thickness_,
       set_robot_orientation(0)));
 
   
