@@ -39,7 +39,7 @@ types_of_gripper = {
 # }
 
 class ProcessOrder():
-    def __init__(self, order_id, node):
+    def __init__(self, order, node):
         """
         Contain the order information from sensor to pass it to the robot
         such as pick position and place position of the tray or part
@@ -48,7 +48,7 @@ class ProcessOrder():
             order_id (int): The ID of the order.
             node: The node object used for communication and logging.
         """
-        self._order_id = order_id
+        self._order_id = order.order_id
         self.node = node
         
         # queue hold the part info, name, color, pick and place position
@@ -61,7 +61,7 @@ class ProcessOrder():
         self._place = False 
 
         ## store all the order info in list
-        self._order = deque()
+        self.getOrder(order)
 
         ## check if any order part in process
         self.current_order= False
@@ -76,54 +76,40 @@ class ProcessOrder():
         """
         return self._recievedOrder
     
-    def getOrder(self, tray_info, parts_info):
+    def getOrder(self, order):
         """
-        Get Order information sequence wise from sensor data 
-        first will be always be tray pick and place,
-        then parts.
-        
+            Get order data, and return a list of information of part and tray i
         Args:
-            tray_info (dict): Information about the tray, including name and pick position.
-            parts_info (list): List of dictionaries containing information about the parts, including name, quadrant, and pick position.
-        
+            order : class Order (utils.py)
         Returns:
-            bool: True if the order information is successfully received.
+            deque()
+        example:
+
         """
-        self._parts_info = {}
-        self._tray_info = {}
+        self._order = deque()
         try:
-            # get part info
-            if len(parts_info) > 0:
-                self._parts_info["parts_info"] = deque(parts_info)
-                gripper_station_loc = self.get_gripper_station_pose("parts",parts_info[0]["kts"])
-                if gripper_station_loc is None:
-                    raise Exception("Issue with the gripper change station location")
-                self._parts_info["gripper_station_pose"] = gripper_station_loc
-                agv_tray_loc = self.get_agv_tray_pose(parts_info[0]["agv_num"])
-                if agv_tray_loc is None:
-                    raise Exception("Issue with the agv tray location")
-                self._parts_info["agv_tray_pose"] = agv_tray_loc
-                for part_info in parts_info:
-                    self._order.appendleft(("parts",part_info))
+            self._order.append(("tray", {
+                "tray_id" : order.order_task.tray_id,
+                "agv_num" : order.order_task.agv_number,
+            }))
 
-            # get tray info
-            gripper_station_loc = self.get_gripper_station_pose("trays",tray_info["kts"])
-            if gripper_station_loc is None:
-                raise Exception("Issue with the gripper change station location")
-            tray_info.update({"gripper_station_pose" : gripper_station_loc})
-
-            agv_tray_loc = self.get_agv_tray_pose(tray_info["agv_num"])
-            if agv_tray_loc is None:
-                raise Exception("Issue with the agv tray location")
-            tray_info.update({"agv_tray_pose" : agv_tray_loc})
-
-            self._order.appendleft(("tray",tray_info))
+            for part in order.order_task.parts:
+                self._order.append((
+                    "part", {
+                        "quadrant" : part.quadrant,
+                        "type" : part.part.type,
+                        "color" : part.part.color,
+                        "agv_num" : order.order_task.agv_number,   
+                    }
+                ))
 
         except Exception as e:
             self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
-
+            # return deque()
+            self._recievedOrder = False
+            return
         self._recievedOrder = True
-        return True
+        # return _order
 
     def get_pick_place_position(self):
         """
@@ -136,52 +122,118 @@ class ProcessOrder():
                 types, order = self._order.popleft()
                 self.node.get_logger().info(f"Processing {types}") 
                 if types=="tray":
-                    # self.current_order = False
-                    # return 
+                    tray_info = self.node.sensor_read.get_tray_pose_from_sensor(order["tray_id"],verbose=True)
 
-                    RM._move_robot_to_table(self.node,order["kts"])
-                
+                    if not RM._move_robot_to_table(self.node,tray_info["kts"]):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return                
+
                     self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
                     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.TRAY_GRIPPER:
                         self.node.get_logger().info("Moving to gripper change station")                        
-                        RM._enter_tool_changer(self.node, f"kts{order['kts']}", "trays")
+                        if not RM._enter_tool_changer(self.node, f"kts{tray_info['kts']}", "trays"):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
-                        RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER)
-
-                        RM._exit_tool_changer(self.node,f"kts{order['kts']}", "trays")
+                        if not RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
                             
+                        if not RM._exit_tool_changer(self.node,f"kts{tray_info['kts']}", "trays"):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
+                        
                     if not self.node.vacuum_gripper_state.enabled:
-                        RM._activate_gripper(self.node)
+                        if not RM._activate_gripper(self.node):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
-                    RM._move_robot_to_tray(self.node,order["id"], order["pose"])
+                    if not RM._move_robot_to_tray(self.node,tray_info["tray_id"], tray_info["pose"]):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return
 
-                    RM._move_tray_to_agv(self.node,order["agv_num"])
+                    if not RM._move_tray_to_agv(self.node,order["agv_num"]):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return
+
+                    
                     if self.node._moved_tray_to_agv:
-                        RM._deactivate_gripper(self.node)
+                        if not RM._deactivate_gripper(self.node):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
-                    RM.agv_tray_locked(self.node,order["agv_num"])
+                    if not RM.agv_tray_locked(self.node,order["agv_num"]):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return
+
                     self.current_order = False
 
                 else:
                     self.node.get_logger().info("Picking Order") 
-                    
+                    part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
+
                     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.PART_GRIPPER:
                         self.node.get_logger().info("Moving to gripper change station")                        
                     
-                        RM._move_robot_to_table(self.node,order["kts"])
-                        RM._enter_tool_changer(self.node, f"kts{order['kts']}", "parts")
+                        if not RM._move_robot_to_table(self.node,part_info["kts"]):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
-                        RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER)
 
-                        RM._exit_tool_changer(self.node,f"kts{order['kts']}", "parts")
-                    # if not self.node.vacuum_gripper_state.enabled:
-                    RM._activate_gripper(self.node)
+                        if not RM._enter_tool_changer(self.node, f"kts{part_info['kts']}", "parts"):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
+
+
+                        if not RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
+
+
+                        if not RM._exit_tool_changer(self.node,f"kts{part_info['kts']}", "parts"):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
+
                     
-                    RM._pick_part(self.node, order["type"], order["color"], order["pose"])
+                    # if not self.node.vacuum_gripper_state.enabled:
+                    if not RM._activate_gripper(self.node):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return
+
+                    
+                    if not RM._pick_part(self.node, order["type"], order["color"], part_info["pose"]):
+                        self.current_order = False
+                        self._order.appendleft((types,order))
+                        return
+
+
                     if self.node._picked_part:
-                        RM._place_part(self.node, order["agv_num"], order["quadrant"])
-                    # if self.node.vacuum_gripper_state.enabled and self.node._deactivating_gripper:
-                        RM._deactivate_gripper(self.node)
+                        if not RM._place_part(self.node, order["agv_num"], order["quadrant"]):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
+
+                        if self.node.vacuum_gripper_state.enabled:
+                            if not RM._deactivate_gripper(self.node):
+                                self.current_order = False
+                                self._order.appendleft((types,order))
+                                return
+
+                    
                     self.current_order = False
 
             else:
@@ -207,36 +259,15 @@ class ProcessOrder():
         Pause the process, service call to moveit, to pause
         """
         try:
-            #  self.current_order == False:
-            #     return True
             while self.current_order: continue
             return True
-            # self.node.get_logger().info("Pausing the order.")
-            # if self.order_type=="pick":
-            #     self.node.get_logger().info("Currently picking the order")
-            #     while self.current_order:
-            #         continue
-            #     self.node.get_logger().info("Start placing the Order.")
-            #     self.get_pick_place_position()
 
-            # while self.current_order and self.order_type=="place":
-            #     continue
-            # self.node.get_logger().info("Completed 1 order. Now pausing!!")
         except Exception as e:
             ...
             self.node.get_logger().error("ERROR : {}".format(traceback.format_exc()))
             return False
 
-        # # Build the request
-        # request = Trigger.Request()
-        # response = self.pause_service.call_async(request)
-        # # Check the result of the service call.
-        # if response.success:
-        #     self.node.get_logger().info(f'Successfully Paused the robot for order id {self._order_id}')
-        # else:
-        #     self.node.get_logger().warn(response.message)
-        #     raise Exception("Unable to Pause") 
-            
+
         return True
 
     def get_gripper_station_pose(self, gripper_type, kts) -> Pose:

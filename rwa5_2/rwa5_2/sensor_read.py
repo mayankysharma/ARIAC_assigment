@@ -19,11 +19,15 @@ from sensor_msgs.msg import (
     PointCloud as PointCloudMsg,
     LaserScan as LaserScanMsg,
 )
-from read_store_orders import ReadStoreOrders
+from geometry_msgs.msg import Pose
+
 from utils import (  
     Mult_pose,
     Quart_to_RPY,
-    AdvancedLogicalCameraImage
+    AdvancedLogicalCameraImage,
+    COLOROFPARTS,
+    TYPEOFPARTS,
+    RPY_to_Quart
 )
 from launch_ros.substitutions import FindPackageShare
     
@@ -123,5 +127,60 @@ class SensorRead():
         # Return parsed output
         return output
 
+    def get_part_pose_from_sensor(self, part_type, part_color, verbose = False):
+        """
+        Retreive the order part info from sensor data and which will be use to pass it to robot for further processing
+        """
+        # key : (type, color, pose)
 
-        
+        for sensor_name, sensor_data in self.sensor_data.items():
+            for sdata in sensor_data:
+                if sdata["is_part"]:
+                    if sdata["type"]==part_type and sdata["color"] == part_color:
+                        # Store the pose, tray_id and agv_num for processing the tray like pick and place
+                        pose = Pose()
+                        pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
+                        quart = RPY_to_Quart(sdata["orientation"])
+                        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
+                        if verbose:
+                            self.node.get_logger().info(f"""\n==========================
+            - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
+                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
+
+                        return {
+                                "type" : sdata["type"],
+                                "color" : sdata["color"],
+                                "pose" : pose,
+                                "kts" : 2 if pose.position.y > 0 else 1,
+                                "bin_side" : "right_bins" if pose.position.x < 0 else "left_bins"
+                                }
+
+
+
+    def get_tray_pose_from_sensor(self, tray_id, verbose= False):
+        """
+        Retreive the order part info from sensor data and which will be use to pass it to robot for further processing
+        """
+        # key : (type, color, pose)
+
+        for sensor_name, sensor_data in self.sensor_data.items():
+            for sdata in sensor_data:
+                if not sdata["is_part"]:
+                    if sdata["tray_id"]==tray_id:
+                        # Store the pose, tray_id and agv_num for processing the tray like pick and place
+                        pose = Pose()
+                        pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
+                        quart = RPY_to_Quart(sdata["orientation"])
+                        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
+                        if verbose:
+                            self.node.get_logger().info(f"""\n==========================
+                - ID : {tray_id}
+                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
+                        
+                        return {
+                            "tray_id" : tray_id,
+                            "pose" : pose,
+                            "kts" : 2 if pose.position.y > 0 else 1
+                        }

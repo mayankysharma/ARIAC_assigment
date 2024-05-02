@@ -219,10 +219,7 @@ class AriacInterface(Node):
             if not process_order.recievedOrder:
                 # if not recieved the order details from sensor, then fetch it.
                 try:
-                    tray_info, parts_info = self.get_info_from_sensor(order,verbose=True)
-                    # self.get_logger().info(f"tray info from sensor : {tray_info}")
-                    # self.get_logger().info(f"part info from sensor : {parts_info}")
-                    process_order.getOrder(tray_info=tray_info, parts_info=parts_info)
+                    process_order.getOrder(order)
                 except Exception as e:
                     self.get_logger().error(f"PROBLEM WITH THE GETING THE PARTS AND TRAY INFO FROM ENVIRONMENT!!!! \n {e}")
                     
@@ -272,116 +269,11 @@ class AriacInterface(Node):
             self.current_order_priority = order.order_priority
             self.pending_order = self.current_order
 
-            self.current_order = (order, ProcessOrder(order_id=order.order_id,node=self), order.order_priority)
+            self.current_order = (order, ProcessOrder(order=order,node=self), order.order_priority)
             self.get_logger().info(f"Got the High Priority Order!! Changing to it of id {self.current_order[0].order_id}!!")
 
         elif self.current_order is None and self.pending_order is None:
-            self.current_order = (order, ProcessOrder(order_id=order.order_id,node=self), self.current_order_priority)
+            self.current_order = (order, ProcessOrder(order=order,node=self), self.current_order_priority)
             self.get_logger().info(f"Got the Order!! Order Id : {order.order_id}")
         else:
             self.order_queue.appendleft(order)
-
-    def get_info_from_sensor(self, order, verbose = False) -> tuple:
-        """
-        Retreive the order part info from sensor data and which will be use to pass it to robot for further processing
-
-        and will print the order part and tray info as well, if verbose = True
-        Example print for sensor information
-        - KITTING01
-            - Kitting Tray:
-                - ID: 1
-                - Position (xyz): [-0.870000, -5.840000, 0.734989]
-                - Orientation (rpy): [0.0, 0.0, 3.14]
-            - Orange Battery:
-                - Position (xyz): [-2.080000, 2.445000, 0.719998]
-                - Orientation (rpy): [0.0, 0.0, 3.14]
-            - Green Sensor:
-                - Position (xyz): [-2.080000, 2.805000, 0.719998]
-                - Orientation (rpy): [0.0, 0.0, 3.14]
-        Args:
-            order : order class, contains order details
-        
-        Return:
-            tuple :
-                tray_info : dict
-                parts_info : list(dict)
-        """
-
-         # store the tray information
-        print_tray = {}
-        tray_info = {}
-        # key : tray_id, value : [pick pose, place pose]
-        
-        # store the part information
-        print_parts = {}
-        parts_info = []
-        # key : (type, color, quadrant, tray_id)
-
-        visited_data = []
-        for sensor_name, sensor_data in self.sensor_read.sensor_data.items():
-            for sdata in sensor_data:
-                if sdata["is_part"]:
-                    for pdata in order.order_task.parts:
-                        if (pdata.part.type, pdata.part.color, pdata.quadrant) in print_parts.keys():
-                            continue
-                        if sdata["type"]==pdata.part.type and sdata["color"] == pdata.part.color and sdata["pose"] not in visited_data:
-                            visited_data.append(sdata["pose"])
-
-                            # Store the pose, tray_id and agv_num for processing the tray like pick and place
-                            pose = Pose()
-                            pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
-                            quart = RPY_to_Quart(sdata["orientation"])
-                            (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
-
-                            parts_info.append(
-                                {
-                                    "type" : pdata.part.type,
-                                    "quadrant" : pdata.quadrant,
-                                    "color" : sdata["color"],
-                                    "pose" : pose,
-                                    "agv_num" : order.order_task.agv_number,
-                                    "pick" : True,
-                                    "kts" : 2 if order.order_task.agv_number<3 else 1 # Reason being agv1 and 2 are near to kts2
-                                }
-                            )
-
-                            print_parts[(sdata["type"], sdata["color"], pdata.quadrant)] = f"""
-            - {ReadStoreOrders._color_of_parts[pdata.part.color]} {ReadStoreOrders._type_of_parts[pdata.part.type]}
-                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
-                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]"""
-                else:
-                    if sdata["tray_id"]==order.order_task.tray_id:
-
-                        # Store the pose, tray_id and agv_num for processing the tray like pick and place
-                        pose = Pose()
-                        pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
-                        quart = RPY_to_Quart(sdata["orientation"])
-                        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
-                        tray_info = {
-                            "id" : order.order_task.tray_id,
-                            "pose" : pose,
-                            "agv_num" : order.order_task.agv_number,
-                            "pick" : True,
-                            "kts" : 1 if "kts1" in sensor_name else 2
-                        }
-
-
-                        ## Prints
-                        print_tray["tray_id"] = f"""
-                - ID : {order.order_task.tray_id}
-                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
-                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]"""
-
-        if verbose:
-            ## printing the part and tray info
-            order_details_print = f"""\n==========================
-            - {order.order_id}
-                - Kitting Tray"""
-            # print(parts)
-            for tray_id, ptray_info in print_tray.items():
-                order_details_print += ptray_info
-            for part_, part_details in print_parts.items():
-                order_details_print += part_details
-            order_details_print += "\n==========================\n"
-            self.get_logger().info(order_details_print)
-        return tray_info, parts_info

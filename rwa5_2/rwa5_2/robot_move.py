@@ -30,7 +30,7 @@ def _move_robot_home(self, end_demo=False):
 
     request = Trigger.Request()
     future = self._move_robot_home_cli.call(request)
-    _move_robot_home_done_cb(self.node, future)
+    return _move_robot_home_done_cb(self.node, future)
 
 def _move_robot_home_done_cb(self, future):
     """
@@ -42,9 +42,10 @@ def _move_robot_home_done_cb(self, future):
     message = future.message
     if future.success:
         self.get_logger().info(f"✅ {message}")
-        self._moved_robot_home = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False
 
 def _move_robot_to_table(self, table_id):
     """
@@ -62,7 +63,7 @@ def _move_robot_to_table(self, table_id):
     request = MoveRobotToTable.Request()
     request.kts = table_id
     future = self._move_robot_to_table_cli.call(request)
-    _move_robot_to_table_done_cb(self, future)
+    return _move_robot_to_table_done_cb(self, future)
 
 def _move_robot_to_table_done_cb(self, future):
     """
@@ -75,8 +76,10 @@ def _move_robot_to_table_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._moved_robot_to_table = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False
 
 def _enter_tool_changer(self, station, gripper_type):
     """
@@ -95,7 +98,7 @@ def _enter_tool_changer(self, station, gripper_type):
     request.changing_station = station
     request.gripper_type = gripper_type
     future = self._enter_tool_changer_cli.call(request)
-    _enter_tool_changer_done_cb(self,future)
+    return _enter_tool_changer_done_cb(self,future)
 
 def _enter_tool_changer_done_cb(self, future):
     """
@@ -108,8 +111,10 @@ def _enter_tool_changer_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._entered_tool_changer = True
+        return  True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False
 
 def _change_gripper(self, gripper_type):
     """
@@ -127,7 +132,7 @@ def _change_gripper(self, gripper_type):
     request = ChangeGripper.Request()
     request.gripper_type = gripper_type
     future = self._change_gripper_cli.call(request)
-    _change_gripper_done_cb(self,future)
+    return _change_gripper_done_cb(self,future)
 
 def _change_gripper_done_cb(self, future):
     """
@@ -140,8 +145,10 @@ def _change_gripper_done_cb(self, future):
     if future.success:
         self.get_logger().info("✅ Gripper changed")
         self._changed_gripper = True
+        return  True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return  False
 
 def _exit_tool_changer(self, station, gripper_type):
     """
@@ -160,7 +167,7 @@ def _exit_tool_changer(self, station, gripper_type):
     request.changing_station = station
     request.gripper_type = gripper_type
     future = self._exit_tool_changer_cli.call(request)
-    _exit_tool_changer_done_cb(self,future)
+    return _exit_tool_changer_done_cb(self,future)
 
 def _exit_tool_changer_done_cb(self, future):
     """
@@ -173,8 +180,10 @@ def _exit_tool_changer_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._exited_tool_changer = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False
 
 def _activate_gripper(self):
     """
@@ -189,7 +198,7 @@ def _activate_gripper(self):
     request = VacuumGripperControl.Request()
     request.enable = True
     future = self._set_gripper_state_cli.call(request)
-    _activate_gripper_done_cb(self,future)
+    return _activate_gripper_done_cb(self,future)
 
 def _activate_gripper_done_cb(self, future):
     """
@@ -201,8 +210,10 @@ def _activate_gripper_done_cb(self, future):
     if future.success:
         self.get_logger().info("✅ Gripper activated")
         self._activated_gripper = True  
+        return  True
     else:
         self.get_logger().fatal("💀 Gripper not activated")
+        return False
 
 def _deactivate_gripper(self):
     """
@@ -216,7 +227,7 @@ def _deactivate_gripper(self):
     request = VacuumGripperControl.Request()
     request.enable = False
     future = self._set_gripper_state_cli.call(request)
-    _deactivate_gripper_done_cb(self,future)
+    return _deactivate_gripper_done_cb(self,future)
 
 def _deactivate_gripper_done_cb(self, future):
     """
@@ -230,8 +241,10 @@ def _deactivate_gripper_done_cb(self, future):
         # self._deactivated_gripper = True
         self._picked_part = False
         self._deactivating_gripper = False
+        return True
     else:
         self.get_logger().fatal("💀 Gripper not deactivated")
+        return False
 
 def _move_robot_to_tray(self, tray_id, tray_pose):
     """
@@ -247,7 +260,7 @@ def _move_robot_to_tray(self, tray_id, tray_pose):
     request.tray_id = tray_id
     request.tray_pose_in_world = tray_pose
     future = self._move_robot_to_tray_cli.call(request)
-    _move_robot_to_tray_done_cb(self,future)
+    return _move_robot_to_tray_done_cb(self,future)
 
 def _move_robot_to_tray_done_cb(self, future):
     """
@@ -260,8 +273,10 @@ def _move_robot_to_tray_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._moved_robot_to_tray = True
+        return True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return False
 
 # @brief Move the floor robot to its home position
 def _move_tray_to_agv(self, agv_number):
@@ -275,7 +290,7 @@ def _move_tray_to_agv(self, agv_number):
     request = MoveTrayToAGV.Request()
     request.agv_number = agv_number
     future = self._move_tray_to_agv_cli.call(request)
-    _move_tray_to_agv_done_cb(self,future)
+    return _move_tray_to_agv_done_cb(self,future)
 
 def _move_tray_to_agv_done_cb(self, future):
     """
@@ -288,8 +303,10 @@ def _move_tray_to_agv_done_cb(self, future):
     if future.success:
         self.get_logger().info(f"✅ {message}")
         self._moved_tray_to_agv = True
+        return  True
     else:
         self.get_logger().fatal(f"💀 {message}")
+        return  False
 
 # @brief Move the floor robot to its home position
 def _pick_part(self, part_type, part_color, part_pose):
@@ -305,7 +322,7 @@ def _pick_part(self, part_type, part_color, part_pose):
     request.part_color = part_color
     request.part_pose_in_world = part_pose
     future = self._pick_part_cli.call(request)
-    _pick_part_done_cb(self,future)
+    return _pick_part_done_cb(self,future)
 
 def _pick_part_done_cb(self, future):
     """
@@ -373,8 +390,8 @@ def agv_tray_locked(self, num):
         # Check the response
         if future.success:
             self.get_logger().info(f'AGV{num}\'s tray locked')
-            return
+            return True
         else:
             self.get_logger().warn('Unable to lock tray')
             raise Exception("Unable to lock the tray")
-        return 
+        return False
