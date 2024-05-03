@@ -162,7 +162,6 @@ class ProcessOrder():
                         self.current_order = False
                         self._order.appendleft((types,order))
                         return
-
                     
                     if self.node._moved_tray_to_agv:
                         if not RM._deactivate_gripper(self.node):
@@ -189,7 +188,6 @@ class ProcessOrder():
                             self._order.appendleft((types,order))
                             return
 
-
                         if not RM._enter_tool_changer(self.node, f"kts{part_info['kts']}", "parts"):
                             self.current_order = False
                             self._order.appendleft((types,order))
@@ -201,25 +199,21 @@ class ProcessOrder():
                             self._order.appendleft((types,order))
                             return
 
-
                         if not RM._exit_tool_changer(self.node,f"kts{part_info['kts']}", "parts"):
                             self.current_order = False
                             self._order.appendleft((types,order))
                             return
-
                     
-                    # if not self.node.vacuum_gripper_state.enabled:
-                    if not RM._activate_gripper(self.node):
-                        self.current_order = False
-                        self._order.appendleft((types,order))
-                        return
-
+                    if not self.node.vacuum_gripper_state.enabled:
+                        if not RM._activate_gripper(self.node):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
                     
                     if not RM._pick_part(self.node, order["type"], order["color"], part_info["pose"]):
                         self.current_order = False
                         self._order.appendleft((types,order))
                         return
-
 
                     if self.node._picked_part:
                         if not RM._place_part(self.node, order["agv_num"], order["quadrant"]):
@@ -227,12 +221,11 @@ class ProcessOrder():
                             self._order.appendleft((types,order))
                             return
 
-                        if self.node.vacuum_gripper_state.enabled:
-                            if not RM._deactivate_gripper(self.node):
-                                self.current_order = False
-                                self._order.appendleft((types,order))
-                                return
-
+                        # if self.node.vacuum_gripper_state.enabled:
+                        #     if not RM._deactivate_gripper(self.node):
+                        #         self.current_order = False
+                        #         self._order.appendleft((types,order))
+                        #         return
                     
                     self.current_order = False
 

@@ -156,6 +156,7 @@ class SensorRead():
                                 "bin_side" : "right_bins" if pose.position.x < 0 else "left_bins"
                                 }
 
+        
 
 
     def get_tray_pose_from_sensor(self, tray_id, verbose= False):

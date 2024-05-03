@@ -169,6 +169,11 @@ class FloorRobot : public rclcpp::Node {
   motion planning.
   */
 
+  // Floor Robot attached part details
+  std::map<std::string, int> floor_robot_attached_part_dict_ = {
+    {"type", 0},
+    {"color", 0},
+  };
 
   //! Service to move the robot to its home pose
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr move_robot_home_srv_;
