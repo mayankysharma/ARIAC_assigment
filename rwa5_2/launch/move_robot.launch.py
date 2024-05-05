@@ -43,10 +43,19 @@ def launch_setup(context, *args, **kwargs):
             ]
         )
     )
-
+    
+    rwa5_interface = Node(
+        package="rwa5_2",
+        executable="ariac_interface_main.py",
+        name="rwa5_interface",
+        output="screen",
+        # parameters=generate_parameters()
+    )
+    
     nodes_to_start = [
         demo_cpp,
-        moveit
+        moveit,
+        rwa5_interface
     ]
 
     return nodes_to_start
