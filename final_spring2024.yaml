@@ -38,6 +38,16 @@ parts:
         slots: [5]
         rotation: 'pi/6'
   
+challenges:
+  - faulty_part:
+      order_id: 'KITTING03'
+      quadrant1: true
+  - dropped_part:
+      robot: 'floor_robot'
+      type: 'sensor'
+      color: 'green'
+      drop_after: 0
+      delay: 5
 
 orders:
   - id: 'KITTING01'
@@ -93,15 +103,6 @@ orders:
           color: 'green'
           quadrant: 4
 
-challenges:
-  - faulty_part:
-      order_id: 'KITTING03'
-      quadrant1: true
-  - dropped_part:
-      robot: 'floor_robot'
-      type: 'sensor'
-      color: 'green'
-      drop_after: 1
-      delay: 1
+
       
 
