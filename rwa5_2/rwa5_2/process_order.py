@@ -228,7 +228,7 @@ class ProcessOrder():
                         #         return
                     
                     self.current_order = False
-
+                    
             else:
                 # do nothing as wait for previous order to process
                 pass
