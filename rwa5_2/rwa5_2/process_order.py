@@ -216,10 +216,13 @@ class ProcessOrder():
                         return
 
                     if self.node._picked_part:
+                        # if not self.node.vaccum_gripper_state.attached:
+                        #     self.current_order = False
+                        #     self._order.appendleft((types,order))
                         if not RM._place_part(self.node, order["agv_num"], order["quadrant"]):
-                            self.current_order = False
-                            self._order.appendleft((types,order))
-                            return
+                                self.current_order = False
+                                self._order.appendleft((types,order))
+                                return
 
                         # if self.node.vacuum_gripper_state.enabled:
                         #     if not RM._deactivate_gripper(self.node):
@@ -228,7 +231,14 @@ class ProcessOrder():
                         #         return
                     
                     self.current_order = False
+                    #Faulty gripper condition to be implemented
+                    # Check the floor_robot_gripper_state
                     
+                    # If attached false:
+                        # set current order false
+                        # Check the AGV cameras if the part is dropped on them, if yes pick it from AGV
+                        # If not, check bin camera for the same part
+                        # If available pick from bin and put the part back on the specified order
             else:
                 # do nothing as wait for previous order to process
                 pass

@@ -309,7 +309,7 @@ bool FloorRobot::move_robot_to_tray(
 
   // set_gripper_state(true);
 
-  wait_for_attach_completion(5.0);
+  wait_for_attach_completion(3.0);
 
   if (floor_gripper_state_.attached)
   {
@@ -1405,7 +1405,7 @@ bool FloorRobot::pick_bin_part(ariac_msgs::msg::Part part_to_pick)
 
   // set_gripper_state(true);
 
-  wait_for_attach_completion(3.0);
+  wait_for_attach_completion(5.0);
 
   // Add part to planning scene
   std::string part_name =
