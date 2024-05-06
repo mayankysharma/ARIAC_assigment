@@ -65,7 +65,6 @@ install(PROGRAMS
   rwa5_2/process_order.py
   rwa5_2/custom_timer.py
   rwa5_2/read_store_orders.py
-  rwa5_2/ship_orders.py
   rwa5_2/submit_orders.py
   rwa5_2/utils.py
   rwa5_2/sensor_read.py

@@ -18,7 +18,9 @@ from read_store_orders import ReadStoreOrders
 from ship_orders import ShipOrders
 from utils import RPY_to_Quart
 
-from submit_orders import OrderSubmission  
+# from submit_orders import OrderSubmission  
+from submit_orders import ShipAndOrderSubmission
+
 from ariac_msgs.msg import (
     CompetitionState as CompetitionStateMsg,
     AdvancedLogicalCameraImage as AdvancedLogicalCameraImageMsg,
@@ -66,14 +68,15 @@ class AriacInterface(Node):
         group_mutex1 = MutuallyExclusiveCallbackGroup()
         group_reentrant1 = ReentrantCallbackGroup()
         robot_cbg = ReentrantCallbackGroup()
+        ship_cbg = ReentrantCallbackGroup()
         self.order_queue = deque()
 
          #Competition State object instance
         self.comp_state = CompetitionState(self, AriacInterface.comp_state_topic_name, AriacInterface.comp_start_state_service_name, AriacInterface.comp_end_state_service_name, callback_group=group_reentrant1)
         self._monitor_state = self.create_timer(1, self.monitor_state_callback,callback_group=group_mutex1)
-        self.order_submit = OrderSubmission(self,AriacInterface.submit_order_service_name,group_reentrant1)
+        self.order_submit = ShipAndOrderSubmission(self, AriacInterface.submit_order_service_name, ship_cbg, robot_cbg)
 
-        self.ship_order = ShipOrders(self,group_reentrant1)
+        # self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
         self.sensor_read=SensorRead(self,callback_group=group_reentrant1)
@@ -233,11 +236,11 @@ class AriacInterface(Node):
                     # Start shipping and submitting the order
                     self.get_logger().info(f"Starting the shipping and submitting the order {order.order_id}!!!")
 
-                    data = self.ship_order.lock_move_agv(order)
+                    data = self.order_submit.lock_move_agv(order)
                     if data is None:
                         self.get_logger().warn("Unable to ship!")
 
-                    while not self.order_submit.Submit_Order(agv_num=order.order_task.agv_number,order_id=order.order_id): continue
+                    
                     self.current_order = self.pending_order
                     if self.pending_order is not None:
                         self.current_order_priority = self.pending_order[2]
