@@ -1,0 +1,12 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ],
+    "files.associations": {
+        "functional": "cpp",
+        "system_error": "cpp"
+    }
+}
