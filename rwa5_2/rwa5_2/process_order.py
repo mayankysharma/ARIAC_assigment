@@ -54,6 +54,8 @@ class ProcessOrder():
         # queue hold the part info, name, color, pick and place position
         self._parts_info = None # deque # list of dict containing all the important part info to robot know and pick and place it.
         self._tray_info = None # {} dictonary containing id, pose, agv_num, "pick" true or not details
+        # Parts that are already processed
+        self._parts_done = []
 
         self._recievedOrder = False
 
@@ -178,7 +180,11 @@ class ProcessOrder():
 
                 else:
                     self.node.get_logger().info("Picking Order") 
-                    part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
+                    # part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
+                    part_info = self.node.sensor_read.get_part_pose_from_agv(self._parts_done, part_color=order['color'], part_type=order['type'])
+                    if part_info is None:
+                        part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
+                    self.node.get_logger().info(str(part_info['agv_num']))
 
                     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.PART_GRIPPER:
                         self.node.get_logger().info("Moving to gripper change station")                        
@@ -210,7 +216,7 @@ class ProcessOrder():
                             self._order.appendleft((types,order))
                             return
                     
-                    if not RM._pick_part(self.node, order["type"], order["color"], part_info["pose"]):
+                    if not RM._pick_part(self.node, order["type"], order["color"], part_info["pose"], part_info['bin_side'], part_info['agv_num']):
                         self.current_order = False
                         self._order.appendleft((types,order))
                         return
@@ -219,10 +225,13 @@ class ProcessOrder():
                         # if not self.node.vaccum_gripper_state.attached:
                         #     self.current_order = False
                         #     self._order.appendleft((types,order))
-                        if not RM._place_part(self.node, order["agv_num"], order["quadrant"]):
-                                self.current_order = False
-                                self._order.appendleft((types,order))
-                                return
+                        if RM._place_part(self.node, order["agv_num"], order["quadrant"]):
+                            self._parts_done.append(part_info)
+                            self.node.get_logger().info(f"Parts done:,{self._parts_done}")
+                        else:
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
                         # if self.node.vacuum_gripper_state.enabled:
                         #     if not RM._deactivate_gripper(self.node):

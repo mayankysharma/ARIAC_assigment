@@ -2,5 +2,7 @@
 uint32 agv_num
 uint32 quadrant
 ---
+#request
 bool success
+#response
 string message

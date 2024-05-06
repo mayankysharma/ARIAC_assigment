@@ -47,7 +47,7 @@ ARIAC_SENSORS_2_Msg = {
 }
 
 class SensorRead():
-    def __init__(self, node, callback_group, sensor_config="sensors"):
+    def __init__(self, node, callback_group, sensor_config="new_sensors"):
         # Finding the package share directory
         pkg_share = FindPackageShare(package='rwa5_2').find('rwa5_2')
         sensor_config_path = os.path.join(pkg_share, 'config', sensor_config + ".yaml")
@@ -135,29 +135,65 @@ class SensorRead():
 
         for sensor_name, sensor_data in self.sensor_data.items():
             for sdata in sensor_data:
-                if sdata["is_part"]:
-                    if sdata["type"]==part_type and sdata["color"] == part_color:
-                        # Store the pose, tray_id and agv_num for processing the tray like pick and place
-                        pose = Pose()
-                        pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
-                        quart = RPY_to_Quart(sdata["orientation"])
-                        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
-                        if verbose:
-                            self.node.get_logger().info(f"""\n==========================
-            - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
-                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
-                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
+                if not "agv" in sensor_name:
+                    if sdata["is_part"]:
+                        if sdata["type"]==part_type and sdata["color"] == part_color:
+                            # Store the pose, tray_id and agv_num for processing the tray like pick and place
+                            pose = Pose()
+                            pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
+                            quart = RPY_to_Quart(sdata["orientation"])
+                            (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
+                            if verbose:
+                                self.node.get_logger().info(f"""\n==========================
+                - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
+                    - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                    - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
 
-                        return {
-                                "type" : sdata["type"],
-                                "color" : sdata["color"],
-                                "pose" : pose,
-                                "kts" : 2 if pose.position.y > 0 else 1,
-                                "bin_side" : "right_bins" if pose.position.x < 0 else "left_bins"
-                                }
+                            return {
+                                    "type" : sdata["type"],
+                                    "color" : sdata["color"],
+                                    "pose" : pose,
+                                    "kts" : 2 if pose.position.y > 0 else 1,
+                                    'agv_num': 0,
+                                    "bin_side" : "right_bins" if pose.position.x < 0 else "left_bins"
+                                    }
 
         
+    def get_part_pose_from_agv(self, ignored_parts, part_type, part_color, verbose = False):
+        """
+        Retrieve the order part pose from agv camera for handling edge cases of faulty gripper challenge
+        """
+        for sensor_name, sensor_data in self.sensor_data.items():
+            for sdata in sensor_data:
+                flag = False
+                if "agv" in sensor_name:
+                   if sdata["is_part"]:
+                        if sdata["type"]==part_type and sdata["color"] == part_color:
+                            for parts in ignored_parts:
+                                if (parts['type']==sdata['type']) and (parts['color']==sdata['color']) and (parts['pose'].position.x==sdata['pose'][0] and parts['pose'].position.y==sdata['pose'][1] and parts['pose'].position.z==sdata['pose'][2]): 
+                                    flag = True
+                                    break
+                            
+                            # Store the pose, tray_id and agv_num for processing the tray like pick and place
+                            if not flag:
+                                pose = Pose()
+                                pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
+                                quart = RPY_to_Quart(sdata["orientation"])
+                                (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
+                            if verbose:
+                                    self.node.get_logger().info(f"""\n==========================
+                    - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
+                        - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                        - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
 
+                            return {
+                                    "type" : sdata["type"],
+                                    "color" : sdata["color"],
+                                    "pose" : pose,
+                                    "kts" : 2 if pose.position.y > 0 else 1,
+                                    "agv_num": int(sensor_name.split('_')[0][3]),
+                                    "bin_side" : ""
+                                    }
 
     def get_tray_pose_from_sensor(self, tray_id, verbose= False):
         """
@@ -167,21 +203,22 @@ class SensorRead():
 
         for sensor_name, sensor_data in self.sensor_data.items():
             for sdata in sensor_data:
-                if not sdata["is_part"]:
-                    if sdata["tray_id"]==tray_id:
-                        # Store the pose, tray_id and agv_num for processing the tray like pick and place
-                        pose = Pose()
-                        pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
-                        quart = RPY_to_Quart(sdata["orientation"])
-                        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
-                        if verbose:
-                            self.node.get_logger().info(f"""\n==========================
-                - ID : {tray_id}
-                - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
-                - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
-                        
-                        return {
-                            "tray_id" : tray_id,
-                            "pose" : pose,
-                            "kts" : 2 if pose.position.y > 0 else 1
-                        }
+                if 'agv' not in sensor_name:
+                    if not sdata["is_part"]:
+                        if sdata["tray_id"]==tray_id:
+                            # Store the pose, tray_id and agv_num for processing the tray like pick and place
+                            pose = Pose()
+                            pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
+                            quart = RPY_to_Quart(sdata["orientation"])
+                            (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
+                            if verbose:
+                                self.node.get_logger().info(f"""\n==========================
+                    - ID : {tray_id}
+                    - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                    - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
+                            
+                            return {
+                                "tray_id" : tray_id,
+                                "pose" : pose,
+                                "kts" : 2 if pose.position.y > 0 else 1
+                            }
