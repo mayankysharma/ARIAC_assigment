@@ -45,6 +45,7 @@
 #include <ariac_msgs/msg/kitting_task.hpp>
 #include <ariac_msgs/msg/order.hpp>
 #include <ariac_msgs/msg/vacuum_gripper_state.hpp>
+#include <ariac_msgs/msg/quality_issue.hpp>
 #include <ariac_msgs/srv/change_gripper.hpp>
 #include <ariac_msgs/srv/move_agv.hpp>
 #include <ariac_msgs/srv/perform_quality_check.hpp>
@@ -424,7 +425,7 @@ class FloorRobot : public rclcpp::Node {
    * @return true Successfully placed the part in the tray
    * @return false Failed to place the part in the tray
    */
-  bool place_part_in_tray(int agv_num, int quadrant);
+  bool place_part_in_tray(int agv_num, int quadrant, std::string order_id="");
   //-----------------------------//
 
   /**

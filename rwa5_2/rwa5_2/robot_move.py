@@ -340,7 +340,7 @@ def _pick_part_done_cb(self, future):
         self.get_logger().fatal(f"💀 {message}")
         return False
 # @brief Move the floor robot to its home position
-def _place_part(self, agv_num, quadrant):
+def _place_part(self, agv_num, quadrant, order_id):
     
     self.get_logger().info("👉 Placing Part...")
     # self._moving_tray_to_agv = True
@@ -351,6 +351,10 @@ def _place_part(self, agv_num, quadrant):
     request = PlacePart.Request()
     request.agv_num = agv_num
     request.quadrant = quadrant
+    request.order_id = order_id
+    
+    self.get_logger().info(f"Order id for request place part: {request.order_id}")
+    
     future = self._place_part_cli.call(request)
     return _pick_part_done_cb(self,future)
 

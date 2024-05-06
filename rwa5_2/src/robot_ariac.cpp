@@ -120,7 +120,7 @@ FloorRobot::FloorRobot()
       options);
   // client to /ariac/perform_quality_check
   quality_checker_ = this->create_client<ariac_msgs::srv::PerformQualityCheck>(
-      "/ariac/perform_quality_check");
+      "/ariac/perform_quality_check", rmw_qos_profile_services_default, gripper_cbg_);
   // client to /ariac/floor_robot_change_gripper
   floor_robot_tool_changer_ =
       this->create_client<ariac_msgs::srv::ChangeGripper>(
@@ -712,8 +712,9 @@ void FloorRobot::place_part_in_tray_cb(robot_commander_msgs::srv::PlacePart::Req
                           robot_commander_msgs::srv::PlacePart::Response::SharedPtr res){
                             int agv_num = req->agv_num;
                             int quadrant = req->quadrant;
+                            std::string order_id= req->order_id;
                               RCLCPP_INFO(get_logger(), "Received request to place the part, agv_num: %d, quadrant: %d",agv_num,quadrant);
-                            if (place_part_in_tray(agv_num, quadrant)){
+                            if (place_part_in_tray(agv_num, quadrant, order_id)){
                               res->success = true;
                               res->message = "Moved the part to tray";
                               RCLCPP_INFO(get_logger(), "Moved the part to tray");
@@ -1426,8 +1427,8 @@ bool FloorRobot::pick_bin_part(ariac_msgs::msg::Part part_to_pick)
   return true;
 }
 
-//=============================================//
-bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
+//==========================================//
+bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order_id)
 {
   if (!floor_gripper_state_.attached)
   {
@@ -1473,22 +1474,81 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
     return false;
   }
 
-  // Drop part in quadrant
-  set_gripper_state(false);
-
   std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
                           part_types_[floor_robot_attached_part_.type];
-  floor_robot_->detachObject(part_name);
-  RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
 
-  waypoints.clear();
-  waypoints.push_back(Utils::build_pose(
-      part_drop_pose.position.x, part_drop_pose.position.y,
-      part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
 
-  move_through_waypoints(waypoints, 0.2, 0.1);
+  RCLCPP_INFO(get_logger(), "Checking quality of the part");
+  auto request =
+      std::make_shared<ariac_msgs::srv::PerformQualityCheck::Request>();
+  RCLCPP_INFO(get_logger(), "Order Id : %s",order_id.c_str());
+  request->order_id = order_id;
+  // else request->order_id = current_order_.id;
+  auto result = quality_checker_->async_send_request(request);
+  result.wait();
+  RCLCPP_INFO(get_logger(), "Order Id 1 means true : %d",result.get()->valid_id);
+  ariac_msgs::msg::QualityIssue quadrant1 = result.get()->quadrant1;
+  ariac_msgs::msg::QualityIssue quadrant2 = result.get()->quadrant2;
+  ariac_msgs::msg::QualityIssue quadrant3 = result.get()->quadrant3;
+  ariac_msgs::msg::QualityIssue quadrant4 = result.get()->quadrant4;
 
-  return true;
+
+  if ((quadrant==1 && quadrant1.faulty_part)
+      || (quadrant==2 && quadrant2.faulty_part)
+      || (quadrant==3 && quadrant3.faulty_part)
+      || (quadrant==4 && quadrant4.faulty_part))  //!result.get()->all_passed)
+  {
+    RCLCPP_ERROR(get_logger(), "Issue with quadrant %d",quadrant);
+    RCLCPP_ERROR(get_logger(), "Removing part from tray and placing it in the faulty part bin");
+    
+    // go_home go to bin
+    if(go_home())
+    {
+      RCLCPP_INFO(get_logger(), "Moved to bin");
+        // Drop part in quadrant
+
+      RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
+      set_gripper_state(false);
+      floor_robot_->detachObject(part_name);
+
+      waypoints.clear();
+      waypoints.push_back(Utils::build_pose(
+          part_drop_pose.position.x, part_drop_pose.position.y,
+          part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
+
+      move_through_waypoints(waypoints, 0.2, 0.1);
+    }
+    else
+    {
+      RCLCPP_ERROR(get_logger(), "Unable to go to bin");
+    }
+
+    return false;
+  }
+  else
+  {
+    // Run this block if the part quality is good
+
+    RCLCPP_INFO(get_logger(), "Part quality is good");
+  
+    // Drop part in quadrant
+    set_gripper_state(false);
+
+    std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
+                            part_types_[floor_robot_attached_part_.type];
+    floor_robot_->detachObject(part_name);
+    RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
+
+    waypoints.clear();
+    waypoints.push_back(Utils::build_pose(
+        part_drop_pose.position.x, part_drop_pose.position.y,
+        part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
+
+    move_through_waypoints(waypoints, 0.2, 0.1);
+
+    return true;
+  }
+  return false;
 }
 
 //=============================================//

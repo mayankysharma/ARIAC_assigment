@@ -219,10 +219,10 @@ class ProcessOrder():
                         # if not self.node.vaccum_gripper_state.attached:
                         #     self.current_order = False
                         #     self._order.appendleft((types,order))
-                        if not RM._place_part(self.node, order["agv_num"], order["quadrant"]):
-                                self.current_order = False
-                                self._order.appendleft((types,order))
-                                return
+                        if not RM._place_part(self.node, order["agv_num"], order["quadrant"], self._order_id):
+                            self.current_order = False
+                            self._order.appendleft((types,order))
+                            return
 
                         # if self.node.vacuum_gripper_state.enabled:
                         #     if not RM._deactivate_gripper(self.node):

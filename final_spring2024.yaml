@@ -40,14 +40,14 @@ parts:
   
 challenges:
   - faulty_part:
-      order_id: 'KITTING03'
-      quadrant1: true
-  - dropped_part:
-      robot: 'floor_robot'
-      type: 'sensor'
-      color: 'green'
-      drop_after: 0
-      delay: 5
+      order_id: 'KITTING02'
+      quadrant2: true
+  # - dropped_part:
+  #     robot: 'floor_robot'
+  #     type: 'sensor'
+  #     color: 'green'
+  #     drop_after: 0
+  #     delay: 5
 
 orders:
   - id: 'KITTING01'
@@ -79,9 +79,9 @@ orders:
         - type: 'sensor'
           color: 'purple'
           quadrant: 2
-        - type: 'sensor'
-          color: 'purple'
-          quadrant: 3
+        # - type: 'sensor'
+        #   color: 'purple'
+        #   quadrant: 3
         - type: 'regulator'
           color: 'green'
           quadrant: 4

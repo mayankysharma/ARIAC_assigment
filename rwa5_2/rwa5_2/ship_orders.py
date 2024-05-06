@@ -50,7 +50,7 @@ class ShipOrders():
     #         raise Exception("Unable to lock the tray")
     #     return 
 
-    def move_agv_to_station(self, num, station):
+    def move_agv_to_station(self):
         '''
         Move an AGV to an assembly station.
 
@@ -61,25 +61,14 @@ class ShipOrders():
         Raises:
             KeyboardInterrupt: Exception raised when the user presses Ctrl+C
         '''
-        # Create a client to send a request to the `/ariac/move_agv` service.
-        if num not in self.agv_move:
-            self.agv_move[num] = self.node.create_client(MoveAGV,f'/ariac/move_agv{num}',callback_group=self.callback_group)
 
-        # Create a request object.
-        request = MoveAGV.Request()
 
-        # Set the request location.
-        if station == KittingTaskMsg.WAREHOUSE:
-            request.location = MoveAGV.Request.WAREHOUSE
-
-        # Send the request.
-        future = self.agv_move[num].call(request)
 
         # Check the result of the service call.
-        if future.success:
-            self.node.get_logger().info(f'Moved AGV{num} to Warehouse')
+        if future.result().success:
+            self.node.get_logger().info(f'Moved AGV to Warehouse')
         else:
-            self.node.get_logger().warn(future.message)
+            self.node.get_logger().warn(future.result().message)
             raise Exception("Unable to Move") 
     
     def lock_move_agv(self, order):
@@ -100,8 +89,22 @@ class ShipOrders():
             # Retrieve the destination
             ship_destination = order.order_task.destination
 
+            # Create a client to send a request to the `/ariac/move_agv` service.
+            if agv_num not in self.agv_move:
+                self.agv_move[num] = self.node.create_client(MoveAGV,f'/ariac/move_agv{agv_num}',callback_group=self.callback_group)
+
+            # Create a request object.
+            request = MoveAGV.Request()
+
+            # Set the request location.
+            if ship_destination == KittingTaskMsg.WAREHOUSE:
+                request.location = MoveAGV.Request.WAREHOUSE
+
+            # Send the request.
+            future = self.agv_move[agv_num].call_async(request)
+            future.add_done_callback(self.move_agv_to_station)
             # self.agv_tray_locked(agv_num)
-            self.move_agv_to_station(agv_num, ship_destination)
+
             return (order.order_id, agv_num)
         except Exception as e:
             print(e)
