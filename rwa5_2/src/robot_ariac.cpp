@@ -1447,12 +1447,16 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
 {
   std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
                           part_types_[floor_robot_attached_part_.type];
-  if (!floor_gripper_state_.attached)
-  {
-    RCLCPP_ERROR(get_logger(), "No part attached");
-    return false;
-  }
-
+  // if (!floor_gripper_state_.attached)
+  // {
+  //   RCLCPP_ERROR(get_logger(), "No part attached");
+    
+  //   return false;
+  // }
+if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+  return false;
+}
   // Move to agv
   floor_robot_->setJointValueTarget(
       "linear_actuator_joint",
@@ -1463,7 +1467,8 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
 //Faulty gripper checking will now start
 //Check in the part is attached and the gripper is enabled
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
-  
+  set_gripper_state(false);
+  floor_robot_->detachObject(part_name);
   return false;
 }
 
@@ -1498,6 +1503,10 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   if (!move_through_waypoints(waypoints, 0.4, 0.2))
   {
     RCLCPP_ERROR(get_logger(), "Not able to place part");
+    if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+  floor_robot_->detachObject(part_name);
+    }
    
     return false;
   }
