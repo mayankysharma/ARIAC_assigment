@@ -48,6 +48,7 @@ class ProcessOrder():
             order_id (int): The ID of the order.
             node: The node object used for communication and logging.
         """
+        self.numb_try=100
         self._order_id = order.order_id
         self.node = node
         
@@ -93,7 +94,7 @@ class ProcessOrder():
             self._order.append(("tray", {
                 "tray_id" : order.order_task.tray_id,
                 "agv_num" : order.order_task.agv_number,
-            }))
+            },self.numb_try))
 
             for part in order.order_task.parts:
                 self._order.append((
@@ -101,8 +102,9 @@ class ProcessOrder():
                         "quadrant" : part.quadrant,
                         "type" : part.part.type,
                         "color" : part.part.color,
-                        "agv_num" : order.order_task.agv_number,   
-                    }
+                        "agv_num" : order.order_task.agv_number,
+                           
+                    },self.numb_try
                 ))
 
         except Exception as e:
@@ -121,14 +123,19 @@ class ProcessOrder():
             if not self.current_order:
                 self.node.get_logger().info(f"Processing the order {self._order_id}!!")
                 self.current_order = True
-                types, order = self._order.popleft()
-                self.node.get_logger().info(f"Processing {types}") 
+                types, order,numb_try = self._order.popleft()
+                 
+                if numb_try<=0:
+                    self.current_order=False
+                    self.node.get_logger().info(f"This part is not getting submitted,  submit the order incomplete for order id {self._order_id},and type{order['type']}")
+                    return
+                self.node.get_logger().info(f"Processing {types}")
                 if types=="tray":
                     tray_info = self.node.sensor_read.get_tray_pose_from_sensor(order["tray_id"],verbose=True)
 
                     if not RM._move_robot_to_table(self.node,tray_info["kts"]):
                         self.current_order = False
-                        self._order.appendleft((types,order))
+                        self._order.appendleft((types,order,numb_try-1))
                         return                
 
                     self.node.get_logger().info(f"current gripper type {self.node.vacuum_gripper_state.type}") 
@@ -136,44 +143,44 @@ class ProcessOrder():
                         self.node.get_logger().info("Moving to gripper change station")                        
                         if not RM._enter_tool_changer(self.node, f"kts{tray_info['kts']}", "trays"):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                         if not RM._change_gripper(self.node,ChangeGripper.Request.TRAY_GRIPPER):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
                             
                         if not RM._exit_tool_changer(self.node,f"kts{tray_info['kts']}", "trays"):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
                         
                     if not self.node.vacuum_gripper_state.enabled:
                         if not RM._activate_gripper(self.node):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                     if not RM._move_robot_to_tray(self.node,tray_info["tray_id"], tray_info["pose"]):
                         self.current_order = False
-                        self._order.appendleft((types,order))
+                        self._order.appendleft((types,order,numb_try-1))
                         return
 
                     if not RM._move_tray_to_agv(self.node,order["agv_num"]):
                         self.current_order = False
-                        self._order.appendleft((types,order))
+                        self._order.appendleft((types,order,numb_try-1))
                         return
                     
                     if self.node._moved_tray_to_agv:
                         if not RM._deactivate_gripper(self.node):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                     if not RM.agv_tray_locked(self.node,order["agv_num"]):
                         self.current_order = False
-                        self._order.appendleft((types,order))
+                        self._order.appendleft((types,order,numb_try-1))
                         return
 
                     self.current_order = False
@@ -191,52 +198,52 @@ class ProcessOrder():
                     
                         if not RM._move_robot_to_table(self.node,part_info["kts"]):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                         if not RM._enter_tool_changer(self.node, f"kts{part_info['kts']}", "parts"):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
 
                         if not RM._change_gripper(self.node,ChangeGripper.Request.PART_GRIPPER):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                         if not RM._exit_tool_changer(self.node,f"kts{part_info['kts']}", "parts"):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
                     
                     if not self.node.vacuum_gripper_state.enabled:
                         if not RM._activate_gripper(self.node):
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
                     
                     if not RM._pick_part(self.node, order["type"], order["color"], part_info["pose"], part_info['bin_side'], part_info['agv_num']):
                         self.current_order = False
-                        self._order.appendleft((types,order))
+                        self._order.appendleft((types,order,numb_try-1))
                         return
 
                     if self.node._picked_part:
                         # if not self.node.vaccum_gripper_state.attached:
                         #     self.current_order = False
-                        #     self._order.appendleft((types,order))
+                        #     self._order.appendleft((types,order,numb_try-1))
                         if RM._place_part(self.node, order["agv_num"], order["quadrant"]):
                             self._parts_done.append(part_info)
                             self.node.get_logger().info(f"Parts done:,{self._parts_done}")
                         else:
                             self.current_order = False
-                            self._order.appendleft((types,order))
+                            self._order.appendleft((types,order,numb_try-1))
                             return
 
                         # if self.node.vacuum_gripper_state.enabled:
                         #     if not RM._deactivate_gripper(self.node):
                         #         self.current_order = False
-                        #         self._order.appendleft((types,order))
+                        #         self._order.appendleft((types,order,numb_try-1))
                         #         return
                     
                     self.current_order = False

@@ -572,37 +572,37 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
   bool found_part = false;
   
   // Check left bins
-  for (auto part : left_bins_parts_)
-  {
-    if (part.part.type == part_type &&
-        part.part.color == part_color)
-    {
-      part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
-      found_part = true;
-      bin_side = "left_bins";
-      break;
-    }
-  }
+  // for (auto part : left_bins_parts_)
+  // {
+  //   if (part.part.type == part_type &&
+  //       part.part.color == part_color)
+  //   {
+  //     part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
+  //     found_part = true;
+  //     bin_side = "left_bins";
+  //     break;
+  //   }
+  // }
   // Check right bins
-  if (!found_part)
-  {
-    for (auto part : right_bins_parts_)
-    {
-      if (part.part.type == part_type &&
-          part.part.color == part_color)
-      {
-        part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
-        found_part = true;
-        bin_side = "right_bins";
-        break;
-      }
-    }
-  }
+  // if (!found_part)
+  // {
+  //   for (auto part : right_bins_parts_)
+  //   {
+  //     if (part.part.type == part_type &&
+  //         part.part.color == part_color)
+  //     {
+  //       part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
+  //       found_part = true;
+  //       bin_side = "right_bins";
+  //       break;
+  //     }
+  //   }
+  // }
 
-  if (!found_part){
-    res->success = false;
-    res->message = "Unable to find the part";
-  }
+  // if (!found_part){
+  //   res->success = false;
+  //   res->message = "Unable to find the part";
+  // }
 
   double part_rotation = Utils::get_yaw_from_pose(part_pose);
   // Change gripper at location closest to part
@@ -642,14 +642,14 @@ if (agv_num!=0){
   which_side_=bin_side;
   }
 
-
+  RCLCPP_INFO(this->get_logger(),"Picking from AGV %s",which_side_.c_str());
   floor_robot_->setJointValueTarget("linear_actuator_joint",
                                    rail_positions_[which_side_]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
-    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
-  
+  // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+  RCLCPP_INFO(this->get_logger(),"Moving to desired position");
   move_to_target();
-
+RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
   // wait_for_attach_completion(2.0);
   
   // double part_rotation = Utils::get_yaw_from_pose(part_pose);
@@ -693,6 +693,8 @@ if (agv_num!=0){
 
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   set_gripper_state(false);
+    // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+     floor_robot_->detachObject(part_name);
   return;
 }
 
@@ -1455,6 +1457,9 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant)
   // }
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   set_gripper_state(false);
+   floor_robot_->detachObject(part_name);
+   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   move_to_target();
   return false;
 }
   // Move to agv
@@ -1463,12 +1468,17 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
       rail_positions_["agv" + std::to_string(agv_num)]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+
   move_to_target();
 //Faulty gripper checking will now start
 //Check in the part is attached and the gripper is enabled
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  
   set_gripper_state(false);
   floor_robot_->detachObject(part_name);
+  floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   RCLCPP_INFO(get_logger(), "Moved the Joint custom");
+  move_to_target();
   return false;
 }
 
@@ -1496,6 +1506,8 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   set_gripper_state(false);
   floor_robot_->detachObject(part_name);
+   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+  move_to_target();
   return false;
 }
 
@@ -1506,6 +1518,9 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
     if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   set_gripper_state(false);
   floor_robot_->detachObject(part_name);
+    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   move_to_target();
+  
     }
    
     return false;
