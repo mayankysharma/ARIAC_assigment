@@ -25,11 +25,7 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-  ros2 launch rwa5_2 move_robot.launch.py 
-  ```
-  Alternatively we can also do :
-  ```bash
-  ros2 run rwa5_2 ariac_interface.py
+  ros2 launch rwa5_2 ariac_interface.launch.py 
   ```
 
   - Second terminal
@@ -37,7 +33,7 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-   ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa5_spring2024 sensor_name:=sensors.yaml competitor_pkg:=rwa5_2
+   ros2 launch ariac_gazebo ariac.launch.py trial_name:=rwa5_spring2024 sensor_name:=sensors competitor_pkg:=rwa5_2
   ```
 
 
