@@ -15,7 +15,7 @@ from tf2_ros.buffer import Buffer
 from custom_timer import CustomTimer
 from comp_state import CompetitionState
 from read_store_orders import ReadStoreOrders
-from ship_orders import ShipOrders
+# from ship_orders import ShipOrders
 from utils import RPY_to_Quart
 
 # from submit_orders import OrderSubmission  

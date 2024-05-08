@@ -15,7 +15,7 @@ import math
 
 
 
-class ImageSubscriber(Node):
+class ImageSubscriber_3(Node):
     def __init__(self):
         super().__init__('image_subscriber_3')
         self.bridge = CvBridge()
@@ -37,7 +37,6 @@ class ImageSubscriber(Node):
             self.listener_callback,
             self.qos_profile,callback_group=self.callback_group_2
               )
-s
         self.partinformaton = {}
         
     def listener_callback(self, msg):
@@ -136,7 +135,7 @@ s
 
 def main(args=None):
     rclpy.init(args=args)
-    image_subscriber = ImageSubscriber()
+    image_subscriber = ImageSubscriber_3()
     rclpy.spin(image_subscriber)
     image_subscriber.destroy_node()
     rclpy.shutdown()

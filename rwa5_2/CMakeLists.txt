@@ -69,6 +69,12 @@ install(PROGRAMS
   rwa5_2/utils.py
   rwa5_2/sensor_read.py
   rwa5_2/robot_move.py
+  rwa5_2/yolonode_leftbin.py
+  rwa5_2/yolonode.py
+  rwa5_2/yolonode_tray1.py
+  rwa5_2/yolonode_tray2.py
+
+  
   DESTINATION lib/${PROJECT_NAME})
 
 include_directories(${ariac_msgs_INCLUDE_DIRS})

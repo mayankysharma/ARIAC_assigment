@@ -15,9 +15,9 @@ import math
 
 
 
-class ImageSubscriber(Node):
+class ImageSubscriber_4(Node):
     def __init__(self):
-        super().__init__('image_subscriber_3')
+        super().__init__('image_subscriber_4')
         self.bridge = CvBridge()
         # Define QoS profile with desired reliability and durability
         self.callback_group = MutuallyExclusiveCallbackGroup()
@@ -138,7 +138,7 @@ class ImageSubscriber(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_subscriber = ImageSubscriber()
+    image_subscriber = ImageSubscriber_4()
     rclpy.spin(image_subscriber)
     image_subscriber.destroy_node()
     rclpy.shutdown()

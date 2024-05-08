@@ -15,7 +15,7 @@ import math
 
 
 
-class ImageSubscriber(Node):
+class ImageSubscriber_2(Node):
     def __init__(self):
         super().__init__('image_subscriber_2')
         self.bridge = CvBridge()
@@ -31,7 +31,7 @@ class ImageSubscriber(Node):
             Image,
             '/ariac/sensors/left_bins_camera/rgb_image',  # Replace this with your image topic
             self.callback,10,callback_group=self.callback_group)
-        self.model = YOLO("best.pt")
+        self.model = YOLO("/home/mayank/ariac_ws/src/ARIAC_assigment/rwa5_2/rwa5_2/best.pt")
         self.classNames = ["blue_battery","blue_pump","blue_regulator","blue_sensor",
                            "green_battery","green_pump","green_regulator","green_sensor",
                            "orange_battery","orange_pump","orange_regulator","orange_sensor",
@@ -157,7 +157,7 @@ class ImageSubscriber(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_subscriber = ImageSubscriber()
+    image_subscriber = ImageSubscriber_2()
     rclpy.spin(image_subscriber)
     image_subscriber.destroy_node()
     rclpy.shutdown()
