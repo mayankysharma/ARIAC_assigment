@@ -654,9 +654,24 @@ RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
   
   // double part_rotation = Utils::get_yaw_from_pose(part_pose);
   std::vector<geometry_msgs::msg::Pose> waypoints;
+  // waypoints.push_back(Utils::build_pose(
+  //     part_pose.position.x, part_pose.position.y, part_pose.position.z + 1,
+  //     set_robot_orientation(part_rotation)));
+
+
+  // waypoints.push_back(Utils::build_pose(
+  //     part_pose.position.x, part_pose.position.y, part_pose.position.z + 0.8,
+  //     set_robot_orientation(part_rotation)));
+
+  // double part_rotation = Utils::get_yaw_from_pose(part_pose);
   waypoints.push_back(Utils::build_pose(
       part_pose.position.x, part_pose.position.y, part_pose.position.z + 0.5,
       set_robot_orientation(part_rotation)));
+
+  // waypoints.push_back(Utils::build_pose(
+  //     part_pose.position.x, part_pose.position.y, part_pose.position.z + 0.3,
+  //     set_robot_orientation(part_rotation)));
+
 
   waypoints.push_back(Utils::build_pose(
       part_pose.position.x, part_pose.position.y,
@@ -671,14 +686,14 @@ RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
     return;
   }
 
-  // set_gripper_state(true);
+  set_gripper_state(true);
   // RCLCPP_INFO(get_logger(), "Attached Part waiting for 3 sec");
   wait_for_attach_completion(1.0);
   
 
     // RCLCPP_INFO(get_logger(), "Attaching!!");
-   if (floor_gripper_state_.attached)
-  {
+  //  if (floor_gripper_state_.enabled)
+  // {
     // Add part to planning scene
     std::string part_name =
         part_colors_[part_color] + "_" + part_types_[part_type];
@@ -691,12 +706,14 @@ RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
 
     RCLCPP_INFO(get_logger(), "Attached part: %s",part_name.c_str());
 
-if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
-  set_gripper_state(false);
-    // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
-     floor_robot_->detachObject(part_name);
-  return;
-}
+    // if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+    //   set_gripper_state(false);
+    //     // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+    //     floor_robot_->detachObject(part_name);
+    //     res->success = false;
+    //   res->message = "Not able to get to above the part";
+    //   return;
+    // }
 
     // Move up slightly
     waypoints.clear();
@@ -706,20 +723,20 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
 
       RCLCPP_INFO(get_logger(), "Moving up slightly");
     if (!move_through_waypoints(waypoints, 0.2, 0.2))
-  {
-    RCLCPP_ERROR(get_logger(), "Not able to get to above the part");
-    res->success = false;
-    res->message = "Not able to get to above the part";
-    return;
-  }
+    {
+      RCLCPP_ERROR(get_logger(), "Not able to get to above the part");
+      res->success = false;
+      res->message = "Not able to get to above the part";
+      return;
+    }
     
     res->success = true;
     res->message = "Part Picked";
     RCLCPP_INFO(get_logger(), "Successfully Picked Part!!");
     return;
-  }
-  res->success = false;
-  res->message = "Not able to Part Picked";
+  
+  // res->success = false;
+  // res->message = "Not able to Part Picked";
     
   // return true;
 }
@@ -905,7 +922,7 @@ void FloorRobot::add_single_model_to_planning_scene(
   shapes::ShapeMsg mesh_msg;
 
   std::string package_share_directory =
-      ament_index_cpp::get_package_share_directory("rwa5_2");
+      ament_index_cpp::get_package_share_directory("final_2");
   std::stringstream path;
   path << "file://" << package_share_directory << "/meshes/" << mesh_file;
   std::string model_path = path.str();
@@ -1456,6 +1473,17 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
     
   //   return false;
   // }
+    // Determine target pose for part based on agv_tray pose
+  auto agv_tray_pose =
+      get_pose_in_world_frame("agv" + std::to_string(agv_num) + "_tray");
+
+  auto part_drop_offset = Utils::build_pose(quad_offsets_[quadrant].first,
+                                            quad_offsets_[quadrant].second, 0.0,
+                                            geometry_msgs::msg::Quaternion());
+
+  auto part_drop_pose = Utils::multiply_poses(agv_tray_pose, part_drop_offset);
+
+  std::vector<geometry_msgs::msg::Pose> waypoints;
 if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   set_gripper_state(false);
    floor_robot_->detachObject(part_name);
@@ -1477,24 +1505,19 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
   
   set_gripper_state(false);
   floor_robot_->detachObject(part_name);
-  floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+  // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
    RCLCPP_INFO(get_logger(), "Moved the Joint custom");
-  move_to_target();
+  // move_to_target();
+    waypoints.clear();
+    waypoints.push_back(Utils::build_pose(
+        part_drop_pose.position.x, part_drop_pose.position.y,
+        part_drop_pose.position.z + 1, set_robot_orientation(0)));
+
+    if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
   return false;
 }
 
-  // Determine target pose for part based on agv_tray pose
-  auto agv_tray_pose =
-      get_pose_in_world_frame("agv" + std::to_string(agv_num) + "_tray");
-
-  auto part_drop_offset = Utils::build_pose(quad_offsets_[quadrant].first,
-                                            quad_offsets_[quadrant].second, 0.0,
-                                            geometry_msgs::msg::Quaternion());
-
-  auto part_drop_pose = Utils::multiply_poses(agv_tray_pose, part_drop_offset);
-
-  std::vector<geometry_msgs::msg::Pose> waypoints;
-
+  waypoints.clear();
   waypoints.push_back(Utils::build_pose(
       part_drop_pose.position.x, part_drop_pose.position.y,
       part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
@@ -1504,24 +1527,22 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
       part_drop_pose.position.z +
           part_heights_[floor_robot_attached_part_.type] + drop_height_ + kit_tray_thickness_,
       set_robot_orientation(0)));
-if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
-  set_gripper_state(false);
-  floor_robot_->detachObject(part_name);
-   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
-  move_to_target();
-  return false;
-}
 
   
   if (!move_through_waypoints(waypoints, 0.4, 0.2))
   {
     RCLCPP_ERROR(get_logger(), "Not able to place part");
     if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
-  set_gripper_state(false);
-  floor_robot_->detachObject(part_name);
-    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
-   move_to_target();
-  
+      set_gripper_state(false);
+      floor_robot_->detachObject(part_name);
+      //   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+      //  move_to_target();
+        waypoints.clear();
+        waypoints.push_back(Utils::build_pose(
+            part_drop_pose.position.x, part_drop_pose.position.y,
+            part_drop_pose.position.z + 0.5, set_robot_orientation(0)));
+
+        if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
     }
    
     return false;
@@ -1570,12 +1591,12 @@ if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
       set_gripper_state(false);
       floor_robot_->detachObject(part_name);
 
-      waypoints.clear();
-      waypoints.push_back(Utils::build_pose(
-          part_drop_pose.position.x, part_drop_pose.position.y,
-          part_drop_pose.position.z + 0.5, set_robot_orientation(0)));
+      // waypoints.clear();
+      // waypoints.push_back(Utils::build_pose(
+      //     0, 0,
+      //     part_drop_pose.position.z + 1, set_robot_orientation(0)));
 
-      if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
+      // if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
     }
     else
     {

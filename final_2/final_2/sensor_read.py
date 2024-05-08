@@ -50,7 +50,7 @@ ARIAC_SENSORS_2_Msg = {
 class SensorRead():
     def __init__(self, node, callback_group, sensor_config="new_sensors"):
         # Finding the package share directory
-        pkg_share = FindPackageShare(package='rwa5_2').find('rwa5_2')
+        pkg_share = FindPackageShare(package='final_2').find('final_2')
         sensor_config_path = os.path.join(pkg_share, 'config', sensor_config + ".yaml")
         
         # Initialize node and sensor data list
@@ -156,7 +156,7 @@ class SensorRead():
                                     "pose" : pose,
                                     "kts" : 2 if pose.position.y > 0 else 1,
                                     'agv_num': 0,
-                                    "bin_side" : "right_bins" if pose.position.x < 0 else "left_bins"
+                                    "bin_side" : "right_bins" if pose.position.y > 0 else "left_bins"
                                     }
 
         

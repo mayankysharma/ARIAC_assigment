@@ -16,7 +16,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     # Interface node
     rwa4_interface = Node(
-        package="rwa5_2",
+        package="final_2",
         executable="ariac_interface_main.py",
         name="rwa5_interface",
         output="screen",

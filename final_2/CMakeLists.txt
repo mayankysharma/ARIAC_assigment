@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rwa5_2)
+project(final_2)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -59,16 +59,16 @@ install(DIRECTORY
 
 
 install(PROGRAMS
-  rwa5_2/comp_state.py
-  rwa5_2/ariac_interface_util.py
-  rwa5_2/ariac_interface_main.py
-  rwa5_2/process_order.py
-  rwa5_2/custom_timer.py
-  rwa5_2/read_store_orders.py
-  rwa5_2/submit_orders.py
-  rwa5_2/utils.py
-  rwa5_2/sensor_read.py
-  rwa5_2/robot_move.py
+  final_2/comp_state.py
+  final_2/ariac_interface_util.py
+  final_2/ariac_interface_main.py
+  final_2/process_order.py
+  final_2/custom_timer.py
+  final_2/read_store_orders.py
+  final_2/submit_orders.py
+  final_2/utils.py
+  final_2/sensor_read.py
+  final_2/robot_move.py
   DESTINATION lib/${PROJECT_NAME})
 
 include_directories(${ariac_msgs_INCLUDE_DIRS})

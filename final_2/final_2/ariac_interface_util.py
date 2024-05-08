@@ -11,11 +11,9 @@ from geometry_msgs.msg import Pose
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
 
-# from ship_orders import ShipOrders
 from custom_timer import CustomTimer
 from comp_state import CompetitionState
 from read_store_orders import ReadStoreOrders
-from ship_orders import ShipOrders
 from utils import RPY_to_Quart
 
 # from submit_orders import OrderSubmission  
@@ -76,7 +74,6 @@ class AriacInterface(Node):
         self._monitor_state = self.create_timer(1, self.monitor_state_callback,callback_group=group_mutex1)
         self.order_submit = ShipAndOrderSubmission(self, AriacInterface.submit_order_service_name, ship_cbg, robot_cbg)
 
-        # self.ship_order = ShipOrders(self,group_reentrant1)
         #Read and store order object instance
         self.read_store_orders=ReadStoreOrders(self,AriacInterface.order_topic1,self.order_queue,callback_group=group_reentrant1)
         self.sensor_read=SensorRead(self,callback_group=group_reentrant1)

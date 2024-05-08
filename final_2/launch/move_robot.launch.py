@@ -28,7 +28,7 @@ def launch_setup(context, *args, **kwargs):
         List[Node]: A list of nodes to start for moving the robot.
     """
     demo_cpp = Node(
-        package="rwa5_2",
+        package="final_2",
         executable="robot_ariac",
         output="screen",
         parameters=generate_parameters()+[{"use_sim_time":True}],

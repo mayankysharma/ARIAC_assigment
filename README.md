@@ -17,7 +17,7 @@ cd ariac_ws/
 * Build the package using
   ```bash
   colcon build --packages-select robot_commander_msgs
-  colcon build --packages-select rwa5_2
+  colcon build --packages-select final_2
   ```
 * Run in the chronology
   - First terminal
@@ -25,8 +25,8 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-  ros2 launch rwa5_2 move_robot.launch.py
-  ros2 launch rwa5_2 ariac_interface.launch.py 
+  ros2 launch final_2 move_robot.launch.py
+  ros2 launch final_2 ariac_interface.launch.py 
   ```
 
   - Second terminal
@@ -34,5 +34,5 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=sensors competitor_pkg:=rwa5_2
+   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=sensors competitor_pkg:=final_2
   ```

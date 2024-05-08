@@ -248,12 +248,14 @@ class ProcessOrder():
                         self._parts_done.append(part_info)
                         self.node.get_logger().info(f"Parts done:,{self._parts_done}")
                     else:
-                        if not self.node.vacuum_gripper_state.attached and not self.node.vacuum_gripper_state.enabled: 
+                        if not (self.node.vacuum_gripper_state.attached and self.node.vacuum_gripper_state.enabled): 
                             # It is a faulty gripper issue pick the part again.
+                            self.node.get_logger().info(f"Attached:,{self.node.vacuum_gripper_state.attached} and Enabled: {self.node.vacuum_gripper_state.enabled}")
                             status = Status.PICK
                         else:
                             status = Status.PLACE
                         self.current_order = False
+                        self.node.get_logger().info(f"Pick and place : {status}")
                         self._order.appendleft((types,order,numb_try-1, status))
                         return
 
