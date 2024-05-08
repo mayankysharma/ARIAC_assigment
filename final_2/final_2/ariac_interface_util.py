@@ -188,6 +188,7 @@ class AriacInterface(Node):
         self._picked_part = False
         self._placed_part = False
         self._pick_part = False
+        self._order_submitted = False
 
 
     def vacuum_gripper_state_cb(self, msg):
@@ -215,6 +216,7 @@ class AriacInterface(Node):
 
         if self.current_order is not None:
             order, process_order, curr_priority = self.current_order
+            # self._order_submitted = False
 
             if not process_order.recievedOrder:
                 # if not recieved the order details from sensor, then fetch it.
@@ -246,6 +248,7 @@ class AriacInterface(Node):
                     self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
         else:
             if self.comp_state.all_orders_recieved:
+                time.sleep(10)
                 self.comp_state.competition_ended = True
 
 

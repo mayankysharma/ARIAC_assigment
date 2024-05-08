@@ -1484,13 +1484,13 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
   auto part_drop_pose = Utils::multiply_poses(agv_tray_pose, part_drop_offset);
 
   std::vector<geometry_msgs::msg::Pose> waypoints;
-if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
-  set_gripper_state(false);
-   floor_robot_->detachObject(part_name);
-   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
-   move_to_target();
-  return false;
-}
+// if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+//   set_gripper_state(false);
+//    floor_robot_->detachObject(part_name);
+//   //  floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+//   //  move_to_target();
+//   return false;
+// }
   // Move to agv
   floor_robot_->setJointValueTarget(
       "linear_actuator_joint",

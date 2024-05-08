@@ -93,6 +93,7 @@ class ShipAndOrderSubmission():
             if response.success:
                 # If order submission is successful, log a success message
                 self.node.get_logger().info("Order submitted successfully.")
+                self.node._order_submitted = True
                 return  # Return True if order submission is successful
             else:
                 # If order submission fails, log an error message

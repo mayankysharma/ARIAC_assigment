@@ -198,6 +198,9 @@ class ProcessOrder():
                     part_info = self.node.sensor_read.get_part_pose_from_agv(self._parts_done, part_color=order['color'], part_type=order['type'],verbose=True)
                     if part_info is None:
                         part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"],verbose=True)
+                    if part_info is None:
+                        self.current_order = False
+                        return
                     self.node.get_logger().info(str(part_info['agv_num']))
 
                     if status == Status.PICK:
