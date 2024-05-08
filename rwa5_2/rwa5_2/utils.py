@@ -31,6 +31,13 @@ TYPEOFPARTS = {
     PartMsg.SENSOR: 'sensor',
 }
 
+QuadrantsOffset = {
+    1: (-0.08, -0.12),
+    2: (0.08, -0.12),
+    3: (-0.08, 0.12),
+    4: (0.08, 0.12)
+}
+
 def Mult_pose(Pose_1: Pose, Pose_2: Pose) -> Pose:
     '''
     Using KDL to multiply two poses together.

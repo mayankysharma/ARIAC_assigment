@@ -3,5 +3,7 @@ uint32 agv_num
 uint32 quadrant
 string order_id
 ---
+#request
 bool success
+#response
 string message

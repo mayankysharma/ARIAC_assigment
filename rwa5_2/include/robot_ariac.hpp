@@ -554,7 +554,7 @@ class FloorRobot : public rclcpp::Node {
   // Orders List
   // competitor_interfaces::msg::FloorRobotTask current_order_;
   // std::vector<competitor_interfaces::msg::FloorRobotTask> orders_;
-
+std::string which_side_;
   //! State of the competition.
   /*!
       - IDLE=0 READY=1

@@ -559,49 +559,50 @@ bool FloorRobot::move_agv(int agv_num, int destination)
 void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::SharedPtr req,
                           robot_commander_msgs::srv::PickPart::Response::SharedPtr res)
 {  
-
+  //Define the request to the service that we recieve from the client
   geometry_msgs::msg::Pose part_pose = req->part_pose_in_world;
 
   uint8_t part_type = req->part_type;
   uint8_t part_color = req->part_color; 
-
-  std::string bin_side = "";
+  uint8_t agv_num=req-> agv_num;
+  std::string bin_side = req->bin_side;
 
   RCLCPP_INFO(get_logger(), "Received request to pict the part type: %d, color: %d",part_type, part_color);
 
   bool found_part = false;
+  
   // Check left bins
-  for (auto part : left_bins_parts_)
-  {
-    if (part.part.type == part_type &&
-        part.part.color == part_color)
-    {
-      part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
-      found_part = true;
-      bin_side = "left_bins";
-      break;
-    }
-  }
+  // for (auto part : left_bins_parts_)
+  // {
+  //   if (part.part.type == part_type &&
+  //       part.part.color == part_color)
+  //   {
+  //     part_pose = Utils::multiply_poses(left_bins_camera_pose_, part.pose);
+  //     found_part = true;
+  //     bin_side = "left_bins";
+  //     break;
+  //   }
+  // }
   // Check right bins
-  if (!found_part)
-  {
-    for (auto part : right_bins_parts_)
-    {
-      if (part.part.type == part_type &&
-          part.part.color == part_color)
-      {
-        part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
-        found_part = true;
-        bin_side = "right_bins";
-        break;
-      }
-    }
-  }
+  // if (!found_part)
+  // {
+  //   for (auto part : right_bins_parts_)
+  //   {
+  //     if (part.part.type == part_type &&
+  //         part.part.color == part_color)
+  //     {
+  //       part_pose = Utils::multiply_poses(right_bins_camera_pose_, part.pose);
+  //       found_part = true;
+  //       bin_side = "right_bins";
+  //       break;
+  //     }
+  //   }
+  // }
 
-  if (!found_part){
-    res->success = false;
-    res->message = "Unable to find the part";
-  }
+  // if (!found_part){
+  //   res->success = false;
+  //   res->message = "Unable to find the part";
+  // }
 
   double part_rotation = Utils::get_yaw_from_pose(part_pose);
   // Change gripper at location closest to part
@@ -630,14 +631,25 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
 
   //   change_gripper(station, "parts");
   // }
+if (agv_num!=0){
+ 
+     std::string numStr = std::to_string(agv_num);
+    which_side_="agv"+numStr;
 
+    
+  }
+  else{
+  which_side_=bin_side;
+  }
+
+  RCLCPP_INFO(this->get_logger(),"Picking from AGV %s",which_side_.c_str());
   floor_robot_->setJointValueTarget("linear_actuator_joint",
-                                   rail_positions_[bin_side]);
+                                   rail_positions_[which_side_]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
-    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
-  
+  // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+  RCLCPP_INFO(this->get_logger(),"Moving to desired position");
   move_to_target();
-
+RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
   // wait_for_attach_completion(2.0);
   
   // double part_rotation = Utils::get_yaw_from_pose(part_pose);
@@ -679,6 +691,12 @@ void FloorRobot::pick_part_cb(robot_commander_msgs::srv::PickPart::Request::Shar
 
     RCLCPP_INFO(get_logger(), "Attached part: %s",part_name.c_str());
 
+if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+    // floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+     floor_robot_->detachObject(part_name);
+  return;
+}
 
     // Move up slightly
     waypoints.clear();
@@ -1430,19 +1448,40 @@ bool FloorRobot::pick_bin_part(ariac_msgs::msg::Part part_to_pick)
 //==========================================//
 bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order_id)
 {
-  if (!floor_gripper_state_.attached)
-  {
-    RCLCPP_ERROR(get_logger(), "No part attached");
-    return false;
-  }
-
+  std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
+                          part_types_[floor_robot_attached_part_.type];
+  // if (!floor_gripper_state_.attached)
+  // {
+  //   RCLCPP_ERROR(get_logger(), "No part attached");
+    
+  //   return false;
+  // }
+if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+   floor_robot_->detachObject(part_name);
+   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   move_to_target();
+  return false;
+}
   // Move to agv
   floor_robot_->setJointValueTarget(
       "linear_actuator_joint",
       rail_positions_["agv" + std::to_string(agv_num)]);
   floor_robot_->setJointValueTarget("floor_shoulder_pan_joint", 0);
   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -1.57);
+
   move_to_target();
+//Faulty gripper checking will now start
+//Check in the part is attached and the gripper is enabled
+if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  
+  set_gripper_state(false);
+  floor_robot_->detachObject(part_name);
+  floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   RCLCPP_INFO(get_logger(), "Moved the Joint custom");
+  move_to_target();
+  return false;
+}
 
   // Determine target pose for part based on agv_tray pose
   auto agv_tray_pose =
@@ -1465,17 +1504,28 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
       part_drop_pose.position.z +
           part_heights_[floor_robot_attached_part_.type] + drop_height_ + kit_tray_thickness_,
       set_robot_orientation(0)));
+if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+  floor_robot_->detachObject(part_name);
+   floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+  move_to_target();
+  return false;
+}
 
   
   if (!move_through_waypoints(waypoints, 0.4, 0.2))
   {
     RCLCPP_ERROR(get_logger(), "Not able to place part");
+    if (!floor_gripper_state_.attached ||!floor_gripper_state_.enabled){
+  set_gripper_state(false);
+  floor_robot_->detachObject(part_name);
+    floor_robot_->setJointValueTarget("floor_shoulder_lift_joint", -0.87);
+   move_to_target();
+  
+    }
    
     return false;
   }
-
-  std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
-                          part_types_[floor_robot_attached_part_.type];
 
 
   RCLCPP_INFO(get_logger(), "Checking quality of the part");
@@ -1500,7 +1550,15 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
   {
     RCLCPP_ERROR(get_logger(), "Issue with quadrant %d",quadrant);
     RCLCPP_ERROR(get_logger(), "Removing part from tray and placing it in the faulty part bin");
-    
+
+    waypoints.clear();
+    waypoints.push_back(Utils::build_pose(
+        part_drop_pose.position.x, part_drop_pose.position.y,
+        part_drop_pose.position.z + 0.5, set_robot_orientation(0)));
+
+    if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
+
+
     // go_home go to bin
     if(go_home())
     {
@@ -1508,15 +1566,16 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
         // Drop part in quadrant
 
       RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
+      
       set_gripper_state(false);
       floor_robot_->detachObject(part_name);
 
       waypoints.clear();
       waypoints.push_back(Utils::build_pose(
           part_drop_pose.position.x, part_drop_pose.position.y,
-          part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
+          part_drop_pose.position.z + 0.5, set_robot_orientation(0)));
 
-      move_through_waypoints(waypoints, 0.2, 0.1);
+      if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
     }
     else
     {
@@ -1534,17 +1593,17 @@ bool FloorRobot::place_part_in_tray(int agv_num, int quadrant, std::string order
     // Drop part in quadrant
     set_gripper_state(false);
 
-    std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
-                            part_types_[floor_robot_attached_part_.type];
-    floor_robot_->detachObject(part_name);
-    RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
+  // std::string part_name = part_colors_[floor_robot_attached_part_.color] + "_" +
+  //                         part_types_[floor_robot_attached_part_.type];
+  floor_robot_->detachObject(part_name);
+  RCLCPP_INFO(get_logger(), "detached object : %s",part_name.c_str());
 
     waypoints.clear();
     waypoints.push_back(Utils::build_pose(
         part_drop_pose.position.x, part_drop_pose.position.y,
-        part_drop_pose.position.z + 0.3, set_robot_orientation(0)));
+        part_drop_pose.position.z + 0.5, set_robot_orientation(0)));
 
-    move_through_waypoints(waypoints, 0.2, 0.1);
+    if (!move_through_waypoints(waypoints, 0.2, 0.1)) return false;
 
     return true;
   }

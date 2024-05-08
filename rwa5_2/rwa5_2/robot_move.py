@@ -309,7 +309,7 @@ def _move_tray_to_agv_done_cb(self, future):
         return  False
 
 # @brief Move the floor robot to its home position
-def _pick_part(self, part_type, part_color, part_pose):
+def _pick_part(self, part_type, part_color, part_pose, bin_side, agv_num):
     
     self.get_logger().info("👉 Picking Part...")
     # self._moving_tray_to_agv = True
@@ -321,6 +321,8 @@ def _pick_part(self, part_type, part_color, part_pose):
     request.part_type = part_type
     request.part_color = part_color
     request.part_pose_in_world = part_pose
+    request.bin_side = bin_side
+    request.agv_num = agv_num
     future = self._pick_part_cli.call(request)
     return _pick_part_done_cb(self,future)
 
@@ -337,6 +339,7 @@ def _pick_part_done_cb(self, future):
         self._picked_part = True
         return True
     else:
+        self._picked_part = False
         self.get_logger().fatal(f"💀 {message}")
         return False
 # @brief Move the floor robot to its home position

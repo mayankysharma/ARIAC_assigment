@@ -2,7 +2,10 @@
 uint32 part_type
 uint32 part_color
 string bin_side
+uint32 agv_num
 geometry_msgs/Pose part_pose_in_world
 ---
+# request
 bool success
+# response
 string message
