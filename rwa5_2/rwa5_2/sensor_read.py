@@ -1,6 +1,7 @@
 import os
 import yaml
 from functools import partial
+import math 
 
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
@@ -170,9 +171,12 @@ class SensorRead():
                    if sdata["is_part"]:
                         if sdata["type"]==part_type and sdata["color"] == part_color:
                             for parts in ignored_parts:
-                                if (parts['type']==sdata['type']) and (parts['color']==sdata['color']) and (parts['pose'].position.x==sdata['pose'][0] and parts['pose'].position.y==sdata['pose'][1] and parts['pose'].position.z==sdata['pose'][2]): 
+                                if (parts['type']==sdata['type']) and (parts['color']==sdata['color']) and math.isclose(parts["part_place_pose"].position.x,sdata['pose'][0], rel_tol=0.01) and  math.isclose(parts["part_place_pose"].position.y,sdata['pose'][1],rel_tol=0.01): 
                                     flag = True
                                     break
+                                self.node.get_logger().info(f"""
+                                    - Part Place Pose (rpy): [{parts["part_place_pose"].position.x:.3f}, {parts["part_place_pose"].position.y:.3f}, {parts["part_place_pose"].position.z:.3f}]
+                                    """)
                             
                             # Store the pose, tray_id and agv_num for processing the tray like pick and place
                             if not flag:
@@ -180,20 +184,21 @@ class SensorRead():
                                 pose.position.x,pose.position.y, pose.position.z = sdata["pose"]
                                 quart = RPY_to_Quart(sdata["orientation"])
                                 (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) = quart 
-                            if verbose:
-                                    self.node.get_logger().info(f"""\n==========================
-                    - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
-                        - Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
-                        - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]\n=============\n""")
+                                if verbose:
+                                        self.node.get_logger().info(f"""\n==========================
+                        - {COLOROFPARTS[sdata["color"]]} {TYPEOFPARTS[sdata["type"]]}
+                            - Part Position (xyz): [{sdata["pose"][0]:.3f}, {sdata["pose"][1]:.3f}, {sdata["pose"][2]:.3f}]
+                            - Orientation (rpy): [{sdata["orientation"][0]:.3f}, {sdata["orientation"][1]:.3f}, {sdata["orientation"][2]:.3f}]
+                            \n=============\n""")
 
-                            return {
-                                    "type" : sdata["type"],
-                                    "color" : sdata["color"],
-                                    "pose" : pose,
-                                    "kts" : 2 if pose.position.y > 0 else 1,
-                                    "agv_num": int(sensor_name.split('_')[0][3]),
-                                    "bin_side" : ""
-                                    }
+                                return {
+                                        "type" : sdata["type"],
+                                        "color" : sdata["color"],
+                                        "pose" : pose,
+                                        "kts" : 2 if pose.position.y > 0 else 1,
+                                        "agv_num": int(sensor_name.split('_')[0][3]),
+                                        "bin_side" : ""
+                                        }
 
     def get_tray_pose_from_sensor(self, tray_id, verbose= False):
         """

@@ -50,41 +50,41 @@ challenges:
       delay: 5
 
 orders:
-  - id: 'KITTING01'
-    type: 'kitting'
-    announcement:
-      time_condition: 0
-    priority: false
-    kitting_task:
-      agv_number: 1
-      tray_id: 1
-      destination: 'warehouse'
-      products:
-        - type: 'pump'
-          color: 'orange'
-          quadrant: 1
-        - type: 'battery'
-          color: 'purple'
-          quadrant: 2
-  - id: 'KITTING02'
-    type: 'kitting'
-    announcement:
-      time_condition: 10
-    priority: true
-    kitting_task:
-      agv_number: 2
-      tray_id: 1
-      destination: 'warehouse'
-      products:
-        - type: 'sensor'
-          color: 'purple'
-          quadrant: 2
-        - type: 'sensor'
-          color: 'purple'
-          quadrant: 3
-        - type: 'regulator'
-          color: 'green'
-          quadrant: 4
+  # - id: 'KITTING01'
+  #   type: 'kitting'
+  #   announcement:
+  #     time_condition: 0
+  #   priority: false
+  #   kitting_task:
+  #     agv_number: 1
+  #     tray_id: 1
+  #     destination: 'warehouse'
+  #     products:
+  #       - type: 'pump'
+  #         color: 'orange'
+  #         quadrant: 1
+  #       - type: 'battery'
+  #         color: 'purple'
+  #         quadrant: 2
+  # - id: 'KITTING02'
+  #   type: 'kitting'
+  #   announcement:
+  #     time_condition: 10
+  #   priority: true
+  #   kitting_task:
+  #     agv_number: 2
+  #     tray_id: 1
+  #     destination: 'warehouse'
+  #     products:
+  #       - type: 'sensor'
+  #         color: 'purple'
+  #         quadrant: 2
+  #       - type: 'sensor'
+  #         color: 'purple'
+  #         quadrant: 3
+  #       - type: 'regulator'
+  #         color: 'green'
+  #         quadrant: 4
   - id: 'KITTING03'
     type: 'kitting'
     announcement:

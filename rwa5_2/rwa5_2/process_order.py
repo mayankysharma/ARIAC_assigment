@@ -16,7 +16,7 @@ from ariac_msgs.srv import ChangeGripper
 # Import custom ROS services
 
 import robot_move as RM
-from utils import COLOROFPARTS, TYPEOFPARTS
+from utils import COLOROFPARTS, TYPEOFPARTS, QuadrantsOffset
 
 FixQuadrantPositionsRelativeTray = {
     1 : np.array([-0.13, -0.08, 0]),
@@ -188,9 +188,9 @@ class ProcessOrder():
                 else:
                     self.node.get_logger().info("Picking Order") 
                     # part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
-                    part_info = self.node.sensor_read.get_part_pose_from_agv(self._parts_done, part_color=order['color'], part_type=order['type'])
+                    part_info = self.node.sensor_read.get_part_pose_from_agv(self._parts_done, part_color=order['color'], part_type=order['type'],verbose=True)
                     if part_info is None:
-                        part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"])
+                        part_info = self.node.sensor_read.get_part_pose_from_sensor(part_color=order["color"], part_type=order["type"],verbose=True)
                     self.node.get_logger().info(str(part_info['agv_num']))
 
                     if types_of_gripper[self.node.vacuum_gripper_state.type] != ChangeGripper.Request.PART_GRIPPER:
@@ -233,6 +233,9 @@ class ProcessOrder():
                         #     self.current_order = False
                         #     self._order.appendleft((types,order,numb_try-1))
                         if RM._place_part(self.node, order["agv_num"], order["quadrant"]):
+                            part_info.update({
+                                "part_place_pose" : self.get_agv_tray_pose(order["agv_num"],order["quadrant"])
+                            })
                             self._parts_done.append(part_info)
                             self.node.get_logger().info(f"Parts done:,{self._parts_done}")
                         else:
@@ -331,7 +334,7 @@ class ProcessOrder():
         #     return None
         return gripper_changer_pose
 
-    def get_agv_tray_pose(self, agv_num) -> Pose:
+    def get_agv_tray_pose(self, agv_num, quadrant) -> Pose:
         """
         This Function get the pose of the agv tray pose to place the tray on agv.
         Args:
@@ -361,6 +364,9 @@ class ProcessOrder():
             agv_tray_pose.orientation.z = t.transform.rotation.z
             agv_tray_pose.orientation.w = t.transform.rotation.w
             # self.node.get_logger().info(f"gripper pose :  agv_tray_pose}")
+
+            agv_tray_pose.position.x += QuadrantsOffset[quadrant][1]
+            agv_tray_pose.position.y += QuadrantsOffset[quadrant][0]
 
         except TransformException as ex:
             self.node.get_logger().error(
