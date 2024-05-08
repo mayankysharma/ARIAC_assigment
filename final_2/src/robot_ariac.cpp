@@ -719,7 +719,7 @@ RCLCPP_INFO(this->get_logger(),"Moved to desired railpose");
     waypoints.clear();
     waypoints.push_back(
         Utils::build_pose(part_pose.position.x, part_pose.position.y,
-                          part_pose.position.z + 0.3, set_robot_orientation(0)));
+                          part_pose.position.z + 1, set_robot_orientation(0)));
 
       RCLCPP_INFO(get_logger(), "Moving up slightly");
     if (!move_through_waypoints(waypoints, 0.2, 0.2))
