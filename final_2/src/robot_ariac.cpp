@@ -10,6 +10,11 @@
  * Additionally, it configures the planning parameters for the floor_robot.
  * Finally, it adds models to the planning scene and starts the executor thread.
  */
+/**
+ * @brief Constructor for the FloorRobot class.
+ * 
+ * This constructor initializes the FloorRobot object. It creates a ROS node, sets up the MoveGroupInterface for the floor_robot, starts the state monitor, and sets various parameters for motion planning. It also creates subscribers for various topics, creates clients for services, and adds models to the planning scene. Finally, it starts the executor and waits for service calls.
+ */
 FloorRobot::FloorRobot()
     : Node("floor_robot_demo_cpp_python"),
       node_(std::make_shared<rclcpp::Node>("example_group_node")),

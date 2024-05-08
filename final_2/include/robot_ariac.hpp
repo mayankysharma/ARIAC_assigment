@@ -87,6 +87,15 @@
  * complete only kitting tasks
  *
  */
+/**
+ * @brief Represents a floor robot in the ARIAC competition.
+ *
+ * The `FloorRobot` class provides methods to control the floor robot's actions
+ * such as starting and ending the competition, locking trays on AGVs, moving
+ * the AGVs to different locations, completing orders, and sending the floor
+ * robot to its home configuration. It also contains private attributes and
+ * methods used for communication with the robot and handling various tasks.
+ */
 class FloorRobot : public rclcpp::Node {
   //-----------------------------//
   // Public methods

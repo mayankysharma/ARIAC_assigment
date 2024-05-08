@@ -1,4 +1,4 @@
-## ENPM663 ARIAC Group2
+## ENPM663 ARIAC Group2 FINAL PROJECT
 * ARIAC task flow for Kitting task, using ROS2 (Galactic) and Python.
 
 ## Team Members:
@@ -8,7 +8,7 @@
 4. Dhruv Sharma
 
 ## Instructions to run rwa4 
-Make sure that the trial file `rwa4_spring2024.yaml` is put in the ariac_gazebo package in the config folder. Then do the following steps to run:
+Make sure that the trial file `final_spring2024.yaml` is put in the ariac_gazebo package in the config folder. Then do the following steps to run:
 * Clone the package in the src of the ARIAC workspace
 * cd in to the workspace ariac_ws/
 ```bash
@@ -25,14 +25,14 @@ cd ariac_ws/
   source install/setup.bash
   ```
   ```bash
-  ros2 launch final_2 move_robot.launch.py
-  ros2 launch final_2 ariac_interface.launch.py 
+   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=sensors competitor_pkg:=final_2
   ```
-
   - Second terminal
   ```
   source install/setup.bash
   ```
   ```bash
-   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=sensors competitor_pkg:=final_2
+  ros2 launch final_2 move_robot.launch.py
+  ros2 launch final_2 ariac_interface.launch.py 
   ```
+

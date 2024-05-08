@@ -17,6 +17,100 @@
  * Static methods allow any other class to use the functions without having to create an instance of the class.
  * 
  */
+/**
+ * @class Utils
+ * @brief A utility class that provides various helper functions for working with poses and transformations.
+ */
+class Utils
+{
+public:
+    Utils() {}
+    ~Utils() {}
+
+    /**
+     * @brief Get the quaternion from euler angles.
+     *
+     * This function converts roll, pitch, and yaw angles to a quaternion representation.
+     *
+     * @param roll  The roll angle in radians.
+     * @param pitch  The pitch angle in radians.
+     * @param yaw  The yaw angle in radians.
+     * @return geometry_msgs::msg::Quaternion  The quaternion representation of the euler angles.
+     */
+    static geometry_msgs::msg::Quaternion get_quaternion_from_euler(double roll, double pitch, double yaw)
+    {
+        // Implementation code...
+    }
+
+    /**
+     * @brief Get the euler angles from a quaternion.
+     *
+     * This function converts a quaternion to roll, pitch, and yaw angles.
+     *
+     * @param quaternion  The quaternion to convert to euler angles.
+     * @return std::array<double, 3>  An array containing the roll, pitch, and yaw angles.
+     */
+    static std::array<double, 3> get_euler_from_quaternion(tf2::Quaternion quaternion)
+    {
+        // Implementation code...
+    }
+
+    /**
+     * @brief Multiply two poses together and return the result.
+     *
+     * This function multiplies two poses together and returns the resulting pose.
+     *
+     * @param pose1  The first pose.
+     * @param pose2  The second pose.
+     * @return geometry_msgs::msg::Pose  The resulting pose after multiplying the two poses.
+     */
+    static geometry_msgs::msg::Pose multiply_poses(geometry_msgs::msg::Pose pose1, geometry_msgs::msg::Pose pose2)
+    {
+        // Implementation code...
+    }
+
+    /**
+     * @brief Build a pose from a position and orientation.
+     *
+     * This function builds a pose from a given position and orientation.
+     *
+     * @param x  The X position.
+     * @param y  The Y position.
+     * @param z  The Z position.
+     * @param orientation  The orientation of the pose as a quaternion.
+     * @return geometry_msgs::msg::Pose  The pose built from the position and orientation.
+     */
+    static geometry_msgs::msg::Pose build_pose(double x, double y, double z, geometry_msgs::msg::Quaternion orientation)
+    {
+        // Implementation code...
+    }
+
+    /**
+     * @brief Log the pose to the console.
+     *
+     * This function logs the pose to the console and returns a string representation of the pose.
+     *
+     * @param pose  The pose to log.
+     * @return std::string  A string representation of the pose.
+     */
+    static std::string log_pose_to_console(geometry_msgs::msg::Pose pose)
+    {
+        // Implementation code...
+    }
+
+    /**
+     * @brief Get the yaw angle from a pose.
+     *
+     * This function extracts the yaw angle from a given pose.
+     *
+     * @param pose  The pose to get the yaw angle from.
+     * @return double  The yaw angle in radians.
+     */
+    static double get_yaw_from_pose(geometry_msgs::msg::Pose pose)
+    {
+        // Implementation code...
+    }
+};
 class Utils
 {
 public:
