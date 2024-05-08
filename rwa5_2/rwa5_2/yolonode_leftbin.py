@@ -103,6 +103,7 @@ class ImageSubscriber_2(Node):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.width, self.height = self.cv_image.shape[1], self.cv_image.shape[0]
+        
         except Exception as e:
             self.get_logger().error('Error converting image: %s' % str(e))
             return

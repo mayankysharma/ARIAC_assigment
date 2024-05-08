@@ -4,6 +4,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2
+import cv2.aruco as aruco
 import numpy as np
 from ultralytics import YOLO
 from matplotlib import pyplot as plt
@@ -11,6 +12,7 @@ from ariac_msgs.msg import AdvancedLogicalCameraImage, PartPose, KitTrayPose, Ba
 from geometry_msgs.msg import Pose, Point, Quaternion
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 import math
 
 
@@ -87,6 +89,11 @@ class ImageSubscriber_3(Node):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.width, self.height = self.cv_image.shape[1], self.cv_image.shape[0]
+            height, width = self.cv_image.shape[:2]
+            self.cv_image = cv2.resize( self.cv_image, (4*width, 4*height), interpolation=cv2.INTER_LINEAR)
+
+            cv2.imshow("Callback Image", self.cv_image)
+            cv2.waitKey(1)
         except Exception as e:
             self.get_logger().error('Error converting image: %s' % str(e))
             return
@@ -103,35 +110,71 @@ class ImageSubscriber_3(Node):
         mapped_x = int((x - x_min) / (x_max - x_min) * (target_x_max - target_x_min) + target_x_min)
 
         return mapped_x
-
+    
     def optical_flow(self):
+       
               # Convert image to grayscale
-        gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
-
+     
+        # height, width, channels = self.cv_image.shape
         # Initialize ArUco dictionary
-        aruco_dict =cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-
-        # Initialize ArUco parameters
+        # aruco_dict =cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+        # cv2.imshow('Aruco Marker Detection gray', gray)
+        # cv2.waitKey(1)
+        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
         parameters =  cv2.aruco.DetectorParameters()
-        detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+        detector = cv2.aruco.ArucoDetector(dictionary, parameters)
+        gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
+        
 
-        # Detect ArUco markers
-        corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
-        print('ids:',ids)
+        # Detect the markers in the grayscale image
+        corners, ids, rejectedImgPoints =  detector.detectMarkers( self.cv_image)
+    # Draw the ArUco markers on the original color image
+        self.cv_image = aruco.drawDetectedMarkers(self.cv_image, corners, ids, borderColor=(255, 0, 0))
+        print("ID",ids)
+            # Initialize ArUco parameters
+        # aruco_dict = aruco.Dictionary_get(aruco.DICT_5X5_250)
 
-        for i in range(len(ids)):
-            # Calculate centroid of the first detected marker
-            centroid_x = int(np.mean(corners[i][0][:, 0]))
-            centroid_y = int(np.mean(corners[i][0][:, 1]))
+        # # Get the ArUco parameters
+        # parameters = aruco.DetectorParameters_create()
 
-            # Print the ArUco marker ID and centroid coordinates
-            print('Detected ArUco Marker ID: %s, Centroid X: %d, Y: %d' % (ids[i][0], centroid_x, centroid_y))
-            self.partinformaton[centroid_x] = ids[i][0]
-            # Display the image with detected markers
-            cv2.aruco.drawDetectedMarkers(self.cv_image, corners, ids)
-            cv2.imshow('Aruco Marker Detection', self.cv_image)
-            cv2.waitKey(1)
+        # # Detect the markers in the image
+        # corners, ids, rejectedImgPoints = aruco.detectMarkers(self.cv_image, aruco_dict, parameters=parameters)
+
+        # # Draw the ArUco markers on the image
+        # self.cv_image = aruco.drawDetectedMarkers(self.cv_image, corners, ids)
+        # # Draw detected markers on the image
+        # print("id",ids)
+        # if ids is not None:
+        #     for i in range(len(ids)):
+        #         # Draw the marker outline
+        #         cv2.aruco.drawDetectedMarkers(self.cv_image, corners)
+
+        #         # Calculate centroid of the detected marker
+        #         centroid_x = int(np.mean(corners[i][0][:, 0]))
+        #         centroid_y = int(np.mean(corners[i][0][:, 1]))
+
+        #         # Draw the centroid on the image
+        #         cv2.circle(self.cv_image, (centroid_x, centroid_y), 5, (0, 255, 0), -1)
+
+        #         # Print the ArUco marker ID and centroid coordinates
+        #         print('Detected ArUco Marker ID: %s, Centroid X: %d, Y: %d' % (ids[i][0], centroid_x, centroid_y))
+
+
+        # for i in range(len(ids)):
+        #     # Calculate centroid of the first detected marker
+        #     centroid_x = int(np.mean(corners[i][0][:, 0]))
+        #     centroid_y = int(np.mean(corners[i][0][:, 1]))
+
+        #     # Print the ArUco marker ID and centroid coordinates
+        #     print('Detected ArUco Marker ID: %s, Centroid X: %d, Y: %d' % (ids[i][0], centroid_x, centroid_y))
+        #     self.partinformaton[centroid_x] = ids[i][0]
+        #     # Display the image with detected markers
+        #     cv2.aruco.drawDetectedMarkers(self.cv_image, corners, ids)
+        #     cv2.imshow('Aruco Marker Detection', self.cv_image)
+        #     cv2.waitKey(1)
         print('part information',self.partinformaton)
+        cv2.imshow("Final",self.cv_image)
+        cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -139,6 +182,7 @@ def main(args=None):
     rclpy.spin(image_subscriber)
     image_subscriber.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

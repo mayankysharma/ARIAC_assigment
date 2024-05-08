@@ -210,7 +210,7 @@ class AriacInterface(Node):
 
         if len(self.order_queue)>0:
             try:
-                order = self.order_queue.popleft()
+                   order = self.order_queue.popleft()
                 # if len(self.current_order)==0:
                 self.update_order(order)
             except Exception as e:

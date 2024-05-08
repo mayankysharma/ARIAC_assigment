@@ -17,8 +17,8 @@ def generate_launch_description():
     # Interface node
     final_yolo1 = Node(
         package="rwa5_2",
-        executable="yolonode.py",
-        name="image_subscriber_1",
+        executable="yolo_combined.py",
+        name="image_subscriber_7",
         output="screen",
         # parameters=generate_parameters()
     )
@@ -43,6 +43,7 @@ def generate_launch_description():
     output="screen",
     # parameters=generate_parameters()
     )
+    
     ld.add_action(final_yolo1)
     ld.add_action(final_yolo2)
     ld.add_action(final_yolo3)

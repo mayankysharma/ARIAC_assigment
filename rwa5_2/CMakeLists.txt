@@ -47,6 +47,7 @@ set(
   geometric_shapes
   moveit_ros_planning_interface
   
+  
 )
 
 install(DIRECTORY
@@ -70,7 +71,7 @@ install(PROGRAMS
   rwa5_2/sensor_read.py
   rwa5_2/robot_move.py
   rwa5_2/yolonode_leftbin.py
-  rwa5_2/yolonode.py
+  rwa5_2/yolo_combined.py
   rwa5_2/yolonode_tray1.py
   rwa5_2/yolonode_tray2.py
 

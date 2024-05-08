@@ -88,7 +88,11 @@ class ImageSubscriber_4(Node):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             self.width, self.height = self.cv_image.shape[1], self.cv_image.shape[0]
-            cv2.imshow('Aruco Marker Detection', self.cv_image)
+            # self.width, self.height = self.cv_image.shape[1], self.cv_image.shape[0]
+            height, width = self.cv_image.shape[:2]
+            self.cv_image = cv2.resize( self.cv_image, (4*width, 4*height), interpolation=cv2.INTER_LINEAR)
+
+            cv2.imshow("Callback Image", self.cv_image)
             cv2.waitKey(1)
         except Exception as e:
             self.get_logger().error('Error converting image: %s' % str(e))
