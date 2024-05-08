@@ -246,9 +246,9 @@ class AriacInterface(Node):
                     self.pending_order = None
                 except Exception as e:
                     self.get_logger().warn(f"Unable to ship and submit the order because of {e}!")
-        else:
+        else: 
             if self.comp_state.all_orders_recieved:
-                time.sleep(10)
+                time.sleep(25)
                 self.comp_state.competition_ended = True
 
 
