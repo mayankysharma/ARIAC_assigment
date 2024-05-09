@@ -151,7 +151,7 @@ class ImageSubscriber_2(Node):
 
                 confidence = box.conf[0]
 
-                if confidence > 0.7:
+                if confidence > 0.6:
                     cv2.rectangle(self.cv_image, (x1, y1), (x2, y2), (255, 0, 255), 3)
                     print("centroid_x",centroid_x)
                     print("centroid_y",centroid_y)
