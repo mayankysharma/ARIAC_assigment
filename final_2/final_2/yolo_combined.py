@@ -103,6 +103,7 @@ class ImageSubscriber_7(Node):
         if not self.flag:
             self.publisher_.publish(self.publish_msg)
             self.get_logger().info('Message published.')
+            self.flag=True
         else:
             self.publish_msg.tray_poses=[]
 
