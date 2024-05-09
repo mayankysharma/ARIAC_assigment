@@ -66,9 +66,18 @@ class SensorRead():
         
         # Create subscriptions for each sensor based on configuration
         for sensor_name, info in self.yaml_data["sensors"].items():
+            if ARIAC_SENSORS_2_TYPE[info['type']] == "advanced_logical_camera":
+                self.sensors_info[sensor_name] = self.node.create_subscription(
+                    ARIAC_SENSORS_2_Msg[info["type"]],
+                    f"/ariac/sensors/{sensor_name}/{ARIAC_SENSORS_2_TYPE[info['type']]}",
+                    partial(self._advanced_camera_cb, name=sensor_name),
+                    qos_profile_sensor_data, callback_group=callback_group   
+                )
+            # else:
+        for sensor_name in ["left_bins","right_bins","kts1_camera","kts2_camera"]:
             self.sensors_info[sensor_name] = self.node.create_subscription(
-                ARIAC_SENSORS_2_Msg[info["type"]],
-                f"/ariac/sensors/{sensor_name}/{ARIAC_SENSORS_2_TYPE[info['type']]}",
+                ARIAC_SENSORS_2_Msg['advanced_logical_camera'],
+                f"/ariac/sensors/{sensor_name}_advanced_logical/image",
                 partial(self._advanced_camera_cb, name=sensor_name),
                 qos_profile_sensor_data, callback_group=callback_group   
             )

@@ -47,9 +47,11 @@ set(
   geometric_shapes
   moveit_ros_planning_interface
   
+  
 )
 
 install(DIRECTORY
+  models
   launch
   doc
   meshes
@@ -69,6 +71,12 @@ install(PROGRAMS
   final_2/utils.py
   final_2/sensor_read.py
   final_2/robot_move.py
+  final_2/yolonode_leftbin.py
+  final_2/yolo_combined.py
+  final_2/yolonode_tray1.py
+  final_2/yolonode_tray2.py
+
+  
   DESTINATION lib/${PROJECT_NAME})
 
 include_directories(${ariac_msgs_INCLUDE_DIRS})

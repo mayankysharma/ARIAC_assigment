@@ -14,25 +14,37 @@ Make sure that the trial file `rwa4_spring2024.yaml` is put in the ariac_gazebo 
 ```bash
 cd ariac_ws/
 ``` 
+
 * Build the package using
   ```bash
   colcon build --packages-select robot_commander_msgs
   colcon build --packages-select final_2
+  pip install -r requirements.txt
   ```
-* Run in the chronology
+* Run the commands in the correct chronology given here
   - First terminal
-  ```
-  source install/setup.bash
-  ```
   ```bash
-  ros2 launch final_2 move_robot.launch.py
-  ros2 launch final_2 ariac_interface.launch.py 
+  source install/setup.bash
+  ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=new_sensors competitor_pkg:=final_2
+  
+
   ```
 
   - Second terminal
-  ```
-  source install/setup.bash
-  ```
   ```bash
-   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=sensors competitor_pkg:=final_2
+  source install/setup.bash
+
+  ros2 launch final_2 move_robot.launch.py
+   
+  ```
+  - Third terminal
+  ```bash
+  source install/setup.bash
+  ros2 launch final_2 ariac_yolo.launch.py
+  ```
+  - Fourth Termial
+  ```bash
+  source install/setup.bash
+    ros2 launch final_2 ariac_interface.launch.py 
+
   ```
