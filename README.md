@@ -27,7 +27,6 @@ cd ariac_ws/
   source install/setup.bash
   ros2 launch ariac_gazebo ariac.launch.py trial_name:=final_spring2024 sensor_name:=new_sensors competitor_pkg:=final_2
   
-
   ```
 
   - Second terminal
@@ -42,6 +41,8 @@ cd ariac_ws/
   source install/setup.bash
   ros2 launch final_2 ariac_yolo.launch.py
   ```
+  * **Note** : Wait 30 secs before running the ariac interface launch file
+  
   - Fourth Termial
   ```bash
   source install/setup.bash
