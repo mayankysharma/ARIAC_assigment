@@ -22,6 +22,39 @@ def generate_launch_description():
         output="screen",
         # parameters=generate_parameters()
     )
-
+    #     # Interface node
+    # final_yolo1 = Node(
+    #     package="final_2",
+    #     executable="yolo_combined.py",
+    #     name="image_subscriber_7",
+    #     output="screen",
+    #     # parameters=generate_parameters()
+    # )
+    # final_yolo2 = Node(
+    # package="final_2",
+    # executable="yolonode_leftbin.py",
+    # name="image_subscriber_2",
+    # output="screen",
+    # # parameters=generate_parameters()
+    # )
+    # final_yolo3 = Node(
+    # package="final_2",
+    # executable="yolonode_tray1.py",
+    # name="image_subscriber_3",
+    # output="screen",
+    # # parameters=generate_parameters()
+    # )
+    # final_yolo4 = Node(
+    # package="final_2",
+    # executable="yolonode_tray2.py",
+    # name="image_subscriber_4",
+    # output="screen",
+    # # parameters=generate_parameters()
+    # )
+    
+    # ld.add_action(final_yolo1)
+    # ld.add_action(final_yolo2)
+    # ld.add_action(final_yolo3)
+    # ld.add_action(final_yolo4)
     ld.add_action(rwa4_interface)
     return ld  # Return LaunchDescription instance

@@ -2,7 +2,7 @@ import os
 import yaml
 from functools import partial
 import math 
-
+import time
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
 
@@ -74,7 +74,7 @@ class SensorRead():
                     qos_profile_sensor_data, callback_group=callback_group   
                 )
             # else:
-        for sensor_name in ["left_bins","right_bins","kts1_camera","kts2_camera"]:
+        for sensor_name in ["left_bins_camera","right_bins_camera","kts1_camera","kts2_camera"]:
             self.sensors_info[sensor_name] = self.node.create_subscription(
                 ARIAC_SENSORS_2_Msg['advanced_logical_camera'],
                 f"/ariac/sensors/{sensor_name}_advanced_logical/image",
@@ -214,7 +214,7 @@ class SensorRead():
         Retreive the order part info from sensor data and which will be use to pass it to robot for further processing
         """
         # key : (type, color, pose)
-
+        print(self.sensor_data)
         for sensor_name, sensor_data in self.sensor_data.items():
             for sdata in sensor_data:
                 if 'agv' not in sensor_name:

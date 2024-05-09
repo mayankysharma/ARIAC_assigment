@@ -40,16 +40,21 @@ class ImageSubscriber_3(Node):
             self.qos_profile,callback_group=self.callback_group_2
               )
         self.partinformaton = {}
+        self.flag=True
+        self.recieved_tray_poses = []
+        self.recieved_part_poses = []
+        self.recieved_sensor_pose = Pose()
         
     def listener_callback(self, msg):
-        print('Received message:')
-        publish_msg=AdvancedLogicalCameraImage()
-        self.get_logger().info('Received message:')
-        self.received_part_poses = msg.part_poses
-        self.received_tray_poses = msg.tray_poses
-        self.received_sensor_pose = msg.sensor_pose
+        print('recieved message:')
+        self.get_logger().info('recieved message:')
+        self.recieved_part_poses = msg.part_poses
+        self.recieved_tray_poses = msg.tray_poses
+        self.recieved_sensor_pose = msg.sensor_pose
         self.get_logger().info('Data saved.')
-        for i, part_pose in enumerate(self.received_tray_poses):
+        self.publish_msg=AdvancedLogicalCameraImage()
+        
+        for i, part_pose in enumerate(self.recieved_tray_poses):
             x, y, z = part_pose.position.x, part_pose.position.y, part_pose.position.z
             print('x:', x, 'y:', y, 'z:', z)
             self.map_coord = self.map_coordinates(round(y, 2), round(z, 2))
@@ -61,29 +66,33 @@ class ImageSubscriber_3(Node):
                     if distance < min_distance:
                         min_distance = distance
                         self.nearest_key = key
-            print("self.partinformaton",self.partinformaton)
-            if self.partinformaton =={}:
-                self.flag=True
-                continue
-            
-            tray_pose = KitTrayPose()
-            tray_pose.id = int(self.partinformaton[self.nearest_key])
-            tray_pose.pose.position.x = part_pose.position.x
-            tray_pose.pose.position.y = part_pose.position.y
-            tray_pose.pose.position.z = part_pose.position.z
-            tray_pose.pose.orientation.x = part_pose.orientation.x
-            tray_pose.pose.orientation.y = part_pose.orientation.y
-            tray_pose.pose.orientation.z = part_pose.orientation.z
-            tray_pose.pose.orientation.w = part_pose.orientation.w
-            publish_msg.tray_poses.append(tray_pose)
+                    print("self.partinformaton",self.partinformaton)
 
-            #publish_msg.part_poses.append(part_pose_pub)
-            publish_msg.part_poses = self.received_part_poses
-            publish_msg.sensor_pose = self.received_sensor_pose
-        self.flag=False    
+                
+                    tray_pose = KitTrayPose()
+                    tray_pose.id = int(self.partinformaton[self.nearest_key])
+                    tray_pose.pose.position.x = part_pose.position.x
+                    tray_pose.pose.position.y = part_pose.position.y
+                    tray_pose.pose.position.z = part_pose.position.z
+                    tray_pose.pose.orientation.x = part_pose.orientation.x
+                    tray_pose.pose.orientation.y = part_pose.orientation.y
+                    tray_pose.pose.orientation.z = part_pose.orientation.z
+                    tray_pose.pose.orientation.w = part_pose.orientation.w
+                    self.publish_msg.tray_poses.append(tray_pose)
+
+                    #publish_msg.part_poses.append(part_pose_pub)
+                    self.publish_msg.part_poses = self.recieved_part_poses
+                    self.publish_msg.sensor_pose = self.recieved_sensor_pose
+                    self.flag=False   
+            
         if not self.flag:
-            self.publisher_.publish(publish_msg)
+            self.publisher_.publish(self.publish_msg)
             self.get_logger().info('Message published.')
+        else :
+            self.publish_msg.tray_poses=[]
+            self.publish_msg.part_poses = []
+            self.publish_msg.sensor_pose = self.recieved_sensor_pose
+            self.publisher_.publish(self.publish_msg)
 
     def callback(self, msg):
         try:
@@ -112,40 +121,39 @@ class ImageSubscriber_3(Node):
         return mapped_x
     
     def optical_flow(self):
+        
        
-              # Convert image to grayscale
-     
-        # height, width, channels = self.cv_image.shape
-        # Initialize ArUco dictionary
-        # aruco_dict =cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-        # cv2.imshow('Aruco Marker Detection gray', gray)
-        # cv2.waitKey(1)
-        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-        parameters =  cv2.aruco.DetectorParameters()
-        detector = cv2.aruco.ArucoDetector(dictionary, parameters)
-        gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
-        
+            dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+            parameters =  cv2.aruco.DetectorParameters()
+            detector = cv2.aruco.ArucoDetector(dictionary, parameters)
+            
+            
 
-        # Detect the markers in the grayscale image
-        corners, ids, rejectedImgPoints =  detector.detectMarkers( self.cv_image)
-    # Draw the ArUco markers on the original color image
-        self.cv_image = aruco.drawDetectedMarkers(self.cv_image, corners, ids, borderColor=(255, 0, 0))
-        print("ID",ids)
-        
+            # Detect the markers in the grayscale image
+            corners, ids, rejectedImgPoints =  detector.detectMarkers( self.cv_image)
+        # Draw the ArUco markers on the original color image
+            self.cv_image = aruco.drawDetectedMarkers(self.cv_image, corners, ids, borderColor=(255, 0, 0))
+            print("ID",ids)
+            
+            self.partinformaton = {}
+            for i in range(len(ids)):
+                # Calculate centroid of the first detected marker
+                centroid_x = int(np.mean(corners[i][0][:, 0])/4)
+                centroid_y = int(np.mean(corners[i][0][:, 1])/4)
+                # Print the ArUco marker ID and centroid coordinates
+                print('Detected ArUco Marker ID: %s, Centroid X: %d, Y: %d' % (ids[i][0], centroid_x, centroid_y))
+                for key in self.partinformaton.keys():
+                    if abs(centroid_x - key) <= 20:
+                        break
+                else:
+                    self.partinformaton[centroid_x] = ids[i][0]
+                
+                # Display the image with detected markers
+            
+            print('part information',self.partinformaton)
 
-        for i in range(len(ids)):
-            # Calculate centroid of the first detected marker
-            centroid_x = int(np.mean(corners[i][0][:, 0])/4)
-            centroid_y = int(np.mean(corners[i][0][:, 1])/4)
+            
 
-            # Print the ArUco marker ID and centroid coordinates
-            print('Detected ArUco Marker ID: %s, Centroid X: %d, Y: %d' % (ids[i][0], centroid_x, centroid_y))
-            self.partinformaton[centroid_x] = ids[i][0]
-            # Display the image with detected markers
-            cv2.aruco.drawDetectedMarkers(self.cv_image, corners, ids)
-        print('part information',self.partinformaton)
-        # cv2.imshow("Final",self.cv_image)
-        # cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)

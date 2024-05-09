@@ -60,16 +60,19 @@ class ImageSubscriber_2(Node):
  
         }
         self.partinformaton = {}
+        self.recieved_tray_poses = []
+        self.recieved_part_poses = []
+        self.recieved_sensor_pose = Pose()
         
     def listener_callback(self, msg):
-        print('Received message:', msg)
-        publish_msg=AdvancedLogicalCameraImage()
-        self.get_logger().info('Received message:')
-        self.received_part_poses = msg.part_poses
-        self.received_tray_poses = msg.tray_poses
-        self.received_sensor_pose = msg.sensor_pose
+        print('recieved message:', msg)
+        self.publish_msg=AdvancedLogicalCameraImage()
+        self.get_logger().info('recieved message:')
+        self.recieved_part_poses = msg.part_poses
+        self.recieved_tray_poses = msg.tray_poses
+        self.recieved_sensor_pose = msg.sensor_pose
         self.get_logger().info('Data saved.')
-        for i, part_pose in enumerate(self.received_part_poses):
+        for i, part_pose in enumerate(self.recieved_part_poses):
             x, y, z = part_pose.position.x, part_pose.position.y, part_pose.position.z
             print('x:', x, 'y:', y, 'z:', z)
             self.map_coord = self.map_coordinates(round(y, 2), round(z, 2))
@@ -82,9 +85,7 @@ class ImageSubscriber_2(Node):
                         min_distance = distance
                         self.nearest_key = key
             print("self.partinformaton",self.partinformaton)
-            if self.partinformaton =={}:
-                self.flag=True
-                continue
+
             part_pose_pub = PartPose()
             part_pose_pub.part.color= self.constants[self.partinformaton[self.nearest_key][0]]
             part_pose_pub.part.type = self.constants[self.partinformaton[self.nearest_key][1]]
@@ -95,13 +96,22 @@ class ImageSubscriber_2(Node):
             part_pose_pub.pose.orientation.y = part_pose.orientation.y
             part_pose_pub.pose.orientation.z = part_pose.orientation.z
             part_pose_pub.pose.orientation.w = part_pose.orientation.w
-            publish_msg.part_poses.append(part_pose_pub)
-            publish_msg.tray_poses = self.received_tray_poses
-            publish_msg.sensor_pose = self.received_sensor_pose
-        self.flag=False    
+            self.publish_msg.part_poses.append(part_pose_pub)
+            self.publish_msg.tray_poses = []
+            self.publish_msg.sensor_pose = self.recieved_sensor_pose
+            self.flag=False    
         if not self.flag:
-            self.publisher_.publish(publish_msg)
+            self.publisher_.publish(self.publish_msg)
             self.get_logger().info('Message published.')
+        else:
+            self.publish_msg.tray_poses=[]
+
+            #publish_msg.part_poses.append(part_pose_pub)
+            self.publish_msg.part_poses = []
+            self.publish_msg.sensor_pose = self.recieved_sensor_pose
+            self.publisher_.publish(self.publish_msg)
+
+
 
     def callback(self, msg):
         try:
@@ -128,7 +138,7 @@ class ImageSubscriber_2(Node):
 
     def optical_flow(self):
         results = self.model(self.cv_image, stream=True)
-
+        self.partinformaton = {}
         for r in results:
             boxes = r.boxes
 
@@ -157,8 +167,8 @@ class ImageSubscriber_2(Node):
 
                     cv2.putText(self.cv_image, self.classNames[cls], org, font, fontScale, color, thickness)
 
-            # cv2.imshow("yolo", self.cv_image)
-            # cv2.waitKey(1)
+            cv2.imshow("yolo", self.cv_image)
+            cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)

@@ -22,13 +22,6 @@ def generate_launch_description():
         output="screen",
         # parameters=generate_parameters()
     )
-    final_yolo2 = Node(
-    package="final_2",
-    executable="yolonode_leftbin.py",
-    name="image_subscriber_2",
-    output="screen",
-    # parameters=generate_parameters()
-    )
     final_yolo3 = Node(
     package="final_2",
     executable="yolonode_tray1.py",
@@ -36,6 +29,7 @@ def generate_launch_description():
     output="screen",
     # parameters=generate_parameters()
     )
+
     final_yolo4 = Node(
     package="final_2",
     executable="yolonode_tray2.py",
@@ -44,9 +38,7 @@ def generate_launch_description():
     # parameters=generate_parameters()
     )
     
-   
-    ld.add_action(final_yolo1)
-    ld.add_action(final_yolo2)
+
     ld.add_action(final_yolo3)
     ld.add_action(final_yolo4)
     return ld  # Return LaunchDescription instance
