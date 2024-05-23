@@ -1,5 +1,5 @@
 ## ENPM663 ARIAC Group2
-* ARIAC task flow for Kitting task, using ROS2 (Galactic) and Python.
+* ARIAC task flow for Kitting task, using ROS2 (Galactic), c++, moveit, Yolo and Python.
 
 ## Team Members:
 1. Yashveer Jain
